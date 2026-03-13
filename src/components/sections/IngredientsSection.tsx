@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { MapPin } from 'lucide-react';
 
 import ingredientJasmine from '@/assets/ingredient-jasmine.jpg';
@@ -46,7 +46,6 @@ const INGREDIENT_ORIGINS: IngredientOrigin[] = [
   },
 ];
 
-// Accurate India map outline SVG path
 const INDIA_PATH = "M 45 4 L 48 3 L 52 4 L 56 3 L 60 5 L 63 4 L 67 6 L 70 5 L 73 8 L 71 12 L 74 14 L 72 17 L 74 20 L 76 22 L 74 25 L 76 28 L 78 32 L 80 28 L 82 25 L 84 28 L 82 32 L 80 36 L 78 34 L 76 36 L 78 40 L 80 44 L 82 48 L 80 52 L 78 56 L 76 60 L 74 64 L 70 68 L 66 72 L 62 76 L 58 80 L 56 84 L 54 88 L 52 92 L 50 96 L 48 94 L 50 90 L 48 86 L 46 90 L 44 86 L 42 82 L 40 78 L 38 74 L 36 70 L 34 66 L 32 62 L 30 58 L 28 54 L 26 50 L 24 46 L 22 42 L 24 38 L 26 34 L 28 30 L 30 26 L 32 22 L 34 18 L 36 14 L 38 10 L 40 8 L 42 6 L 45 4 Z";
 
 export function IngredientsSection() {
@@ -65,7 +64,6 @@ export function IngredientsSection() {
       />
 
       <div className="container mx-auto px-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -81,7 +79,6 @@ export function IngredientsSection() {
           </p>
         </motion.div>
 
-        {/* Map & Ingredients */}
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           {/* India Map */}
           <motion.div
@@ -91,7 +88,6 @@ export function IngredientsSection() {
             className="relative aspect-[3/4] max-h-[600px] glass-panel p-8"
           >
             <svg viewBox="0 0 105 100" className="w-full h-full" fill="none">
-              {/* Glow behind map */}
               <defs>
                 <filter id="mapGlow" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
@@ -110,7 +106,6 @@ export function IngredientsSection() {
                 strokeWidth="0.5"
                 fill="hsl(var(--primary) / 0.03)"
               />
-              {/* State boundary hints */}
               <line x1="30" y1="55" x2="78" y2="55" stroke="hsl(var(--primary) / 0.08)" strokeWidth="0.3" strokeDasharray="2,2" />
               <line x1="36" y1="40" x2="80" y2="40" stroke="hsl(var(--primary) / 0.08)" strokeWidth="0.3" strokeDasharray="2,2" />
             </svg>
@@ -133,7 +128,6 @@ export function IngredientsSection() {
                   <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-30" />
                   <span className="absolute -inset-1 rounded-full border border-primary/30" />
                 </motion.span>
-                {/* Label */}
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={inView ? { opacity: 1 } : {}}
@@ -145,7 +139,6 @@ export function IngredientsSection() {
               </button>
             ))}
 
-            {/* Active ingredient tooltip */}
             <AnimatePresence>
               {activeIngredient && (
                 <motion.div
@@ -221,6 +214,3 @@ export function IngredientsSection() {
     </section>
   );
 }
-
-// Need AnimatePresence import
-import { AnimatePresence } from 'framer-motion';
