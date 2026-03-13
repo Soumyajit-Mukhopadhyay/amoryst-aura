@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QUIZ, scoreQuizAnswers, type QuizOption } from '@/data/quiz';
 import { getPerfumeById } from '@/data/perfumes';
-import { BOTTLE_IMAGES } from '@/data/bottleImages';
+import { BOTTLE_IMAGES, BOTTLE_VIDEOS } from '@/data/bottleImages';
 import { useCartStore } from '@/store/useCartStore';
-import { X, ArrowRight, Share2, ShoppingBag } from 'lucide-react';
+import { X, ArrowRight, Share2, ShoppingBag, Sparkles, Flame, Trophy, Zap } from 'lucide-react';
 
-// Quiz option images
 import quizMorning from '@/assets/quiz-morning.jpg';
 import quizEvening from '@/assets/quiz-evening.jpg';
 import quizWeekend from '@/assets/quiz-weekend.jpg';
@@ -26,24 +25,77 @@ interface ScentFinderProps {
   onClose: () => void;
 }
 
+/* Floating particles for background */
+function FloatingParticles() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {Array.from({ length: 20 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 rounded-full bg-primary/30"
+          style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.6, 0.2],
+            scale: [1, 1.5, 1],
+          }}
+          transition={{ duration: 3 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 2 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* Streak flame indicator */
+function StreakIndicator({ streak }: { streak: number }) {
+  if (streak < 2) return null;
+  return (
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 border border-primary/30"
+    >
+      <Flame className="w-3.5 h-3.5 text-primary" />
+      <span className="font-mono text-[10px] tracking-wider text-primary uppercase">{streak}x Streak</span>
+    </motion.div>
+  );
+}
+
 export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
-  const [stage, setStage] = useState<'intro' | 'quiz' | 'result'>('intro');
+  const [stage, setStage] = useState<'intro' | 'quiz' | 'analyzing' | 'result'>('intro');
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<QuizOption[]>([]);
   const [results, setResults] = useState<string[]>([]);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [xp, setXp] = useState(0);
+  const [showXpGain, setShowXpGain] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
 
   const handleStart = () => setStage('quiz');
 
   const handleSelect = (option: QuizOption) => {
-    const newAnswers = [...answers, option];
-    setAnswers(newAnswers);
-    if (currentQ < QUIZ.questions.length - 1) {
-      setCurrentQ(currentQ + 1);
-    } else {
-      setResults(scoreQuizAnswers(newAnswers));
-      setStage('result');
-    }
+    setSelectedOption(option.id);
+    setStreak(s => s + 1);
+    const gained = 20 + streak * 5;
+    setXp(x => x + gained);
+    setShowXpGain(true);
+    setTimeout(() => setShowXpGain(false), 800);
+
+    setTimeout(() => {
+      const newAnswers = [...answers, option];
+      setAnswers(newAnswers);
+      setSelectedOption(null);
+      if (currentQ < QUIZ.questions.length - 1) {
+        setCurrentQ(currentQ + 1);
+      } else {
+        setStage('analyzing');
+        setTimeout(() => {
+          setResults(scoreQuizAnswers(newAnswers));
+          setStage('result');
+        }, 2500);
+      }
+    }, 600);
   };
 
   const handleReset = () => {
@@ -51,6 +103,8 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
     setCurrentQ(0);
     setAnswers([]);
     setResults([]);
+    setStreak(0);
+    setXp(0);
   };
 
   const question = QUIZ.questions[currentQ];
@@ -65,7 +119,8 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[70] flex items-center justify-center"
         >
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" onClick={onClose} />
+          <div className="absolute inset-0 bg-background/98 backdrop-blur-xl" onClick={onClose} />
+          <FloatingParticles />
 
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -78,20 +133,59 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
               <X className="w-6 h-6" />
             </button>
 
+            {/* XP bar - visible during quiz */}
+            {stage === 'quiz' && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between px-8 pt-6"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="w-4 h-4 text-primary" />
+                    <span className="font-mono text-xs text-primary">{xp} XP</span>
+                  </div>
+                  <AnimatePresence>
+                    {showXpGain && (
+                      <motion.span
+                        initial={{ opacity: 1, y: 0 }}
+                        animate={{ opacity: 0, y: -20 }}
+                        exit={{ opacity: 0 }}
+                        className="font-mono text-xs text-primary font-bold"
+                      >
+                        +{20 + (streak - 1) * 5}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <StreakIndicator streak={streak} />
+              </motion.div>
+            )}
+
             {/* INTRO */}
             {stage === 'intro' && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 px-8">
                 <motion.div
                   initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
+                  animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
                   transition={{ type: 'spring', delay: 0.2 }}
-                  className="w-20 h-20 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-8"
+                  className="w-24 h-24 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-8"
                 >
-                  <span className="text-3xl">✦</span>
+                  <Sparkles className="w-10 h-10 text-primary" />
                 </motion.div>
                 <p className="font-mono text-xs tracking-[0.3em] text-primary mb-6 uppercase">Scent Finder</p>
                 <h2 className="font-display text-5xl md:text-6xl font-light text-foreground mb-4">{QUIZ.intro.headline}</h2>
-                <p className="font-body text-lg text-muted-foreground mb-10">{QUIZ.intro.subhead}</p>
+                <p className="font-body text-lg text-muted-foreground mb-4">{QUIZ.intro.subhead}</p>
+                <div className="flex items-center justify-center gap-4 mb-10">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50">
+                    <Trophy className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-mono text-[10px] text-muted-foreground tracking-wider">Earn XP</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50">
+                    <Flame className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-mono text-[10px] text-muted-foreground tracking-wider">Build Streaks</span>
+                  </div>
+                </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -112,29 +206,38 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -80 }}
                 transition={{ duration: 0.4 }}
-                className="py-12 px-8"
+                className="py-8 px-8"
               >
-                {/* Progress */}
-                <div className="flex justify-center mb-8">
-                  <svg width="60" height="60" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="26" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
-                    <motion.circle
-                      cx="30" cy="30" r="26" fill="none"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="3" strokeLinecap="round"
-                      strokeDasharray={2 * Math.PI * 26}
-                      initial={{ strokeDashoffset: 2 * Math.PI * 26 }}
-                      animate={{ strokeDashoffset: 2 * Math.PI * 26 * (1 - progress) }}
-                      transition={{ duration: 0.5 }}
-                      transform="rotate(-90 30 30)"
+                {/* Progress ring */}
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <svg width="70" height="70" viewBox="0 0 70 70">
+                      <circle cx="35" cy="35" r="30" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
+                      <motion.circle
+                        cx="35" cy="35" r="30" fill="none"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="3" strokeLinecap="round"
+                        strokeDasharray={2 * Math.PI * 30}
+                        initial={{ strokeDashoffset: 2 * Math.PI * 30 }}
+                        animate={{ strokeDashoffset: 2 * Math.PI * 30 * (1 - progress) }}
+                        transition={{ duration: 0.6 }}
+                        transform="rotate(-90 35 35)"
+                      />
+                      <text x="35" y="39" textAnchor="middle" className="fill-foreground font-body text-sm font-medium">
+                        {currentQ + 1}/{QUIZ.questions.length}
+                      </text>
+                    </svg>
+                    {/* Glow on progress */}
+                    <motion.div
+                      animate={{ opacity: [0.3, 0.6, 0.3] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="absolute inset-0 rounded-full"
+                      style={{ boxShadow: '0 0 20px 5px hsl(var(--primary) / 0.15)' }}
                     />
-                    <text x="30" y="35" textAnchor="middle" className="fill-foreground font-body text-sm">
-                      {currentQ + 1}/{QUIZ.questions.length}
-                    </text>
-                  </svg>
+                  </div>
                 </div>
 
-                <h3 className="font-display text-2xl md:text-3xl text-foreground text-center mb-3">{question.question}</h3>
+                <h3 className="font-display text-2xl md:text-3xl text-foreground text-center mb-2">{question.question}</h3>
                 {question.subtext && (
                   <p className="font-body text-sm text-muted-foreground text-center mb-8">{question.subtext}</p>
                 )}
@@ -142,16 +245,19 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {question.options.map((opt, i) => {
                     const img = QUIZ_IMAGES[opt.id];
+                    const isSelected = selectedOption === opt.id;
                     return (
                       <motion.button
                         key={opt.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
+                        transition={{ delay: i * 0.08 }}
                         whileHover={{ scale: 1.03, y: -4 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={() => handleSelect(opt)}
-                        className="group glass-panel overflow-hidden text-left hover:border-primary/40 transition-all"
+                        onClick={() => !selectedOption && handleSelect(opt)}
+                        className={`group glass-panel overflow-hidden text-left transition-all relative ${
+                          isSelected ? 'border-primary/60 ring-2 ring-primary/30' : 'hover:border-primary/40'
+                        }`}
                       >
                         {img && (
                           <div className="relative h-32 overflow-hidden">
@@ -166,6 +272,15 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                             <p className="font-body text-xs text-muted-foreground italic">{opt.sensoryHint}</p>
                           )}
                         </div>
+                        {/* Selection flash */}
+                        {isSelected && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 0.3, 0] }}
+                            transition={{ duration: 0.6 }}
+                            className="absolute inset-0 bg-primary pointer-events-none"
+                          />
+                        )}
                       </motion.button>
                     );
                   })}
@@ -173,20 +288,66 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
               </motion.div>
             )}
 
+            {/* ANALYZING */}
+            {stage === 'analyzing' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="py-24 px-8 text-center"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                  className="w-16 h-16 mx-auto mb-8 rounded-full border-2 border-primary/30 border-t-primary"
+                />
+                <motion.p
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="font-display text-2xl text-foreground mb-2"
+                >
+                  Analyzing your scent profile...
+                </motion.p>
+                <p className="font-body text-sm text-muted-foreground">Matching {xp} XP worth of preferences</p>
+
+                {/* Animated scent words */}
+                <div className="flex flex-wrap justify-center gap-2 mt-8 max-w-md mx-auto">
+                  {answers.map((a, i) => (
+                    <motion.span
+                      key={a.id}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: [0, 1, 0.5], scale: [0, 1.1, 1] }}
+                      transition={{ delay: i * 0.3, duration: 1 }}
+                      className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-body text-primary"
+                    >
+                      {a.tag}
+                    </motion.span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {/* RESULT */}
             {stage === 'result' && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-12 px-8 text-center">
+                {/* Achievement */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', delay: 0.1 }}
+                  className="mb-6"
                 >
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
+                    <Trophy className="w-4 h-4 text-primary" />
+                    <span className="font-mono text-xs text-primary tracking-wider">{xp} XP Earned • {streak}x Max Streak</span>
+                  </div>
                   <p className="font-mono text-xs tracking-[0.3em] text-primary mb-4 uppercase">Your Perfect Match</p>
                 </motion.div>
+
                 <div className="flex flex-col sm:flex-row gap-6 justify-center mb-10">
                   {results.map((id, idx) => {
                     const perfume = getPerfumeById(id);
                     if (!perfume) return null;
+                    const videoSrc = BOTTLE_VIDEOS[id];
                     return (
                       <motion.div
                         key={id}
@@ -195,29 +356,45 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                         transition={{ delay: 0.3 + idx * 0.2, type: 'spring' }}
                         className="glass-panel p-6 max-w-xs mx-auto group"
                       >
-                        <div className="relative overflow-hidden rounded-lg mb-4">
-                          <img
-                            src={BOTTLE_IMAGES[id]}
-                            alt={perfume.name}
-                            className="w-48 h-48 object-cover mx-auto group-hover:scale-105 transition-transform duration-500"
-                          />
+                        <div className="relative overflow-hidden rounded-lg mb-4 h-48">
+                          {videoSrc ? (
+                            <video autoPlay muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                              <source src={videoSrc} type="video/mp4" />
+                            </video>
+                          ) : (
+                            <img
+                              src={BOTTLE_IMAGES[id]}
+                              alt={perfume.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          )}
                         </div>
                         <h3 className="font-display text-2xl text-foreground mb-1">{perfume.name}</h3>
-                        <p className="font-body text-sm text-muted-foreground italic mb-4">{perfume.tagline}</p>
-                        <div className="flex flex-col gap-2">
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => {
-                              const size = perfume.sizes[0];
-                              addItem({ perfumeId: perfume.id, name: perfume.name, size: size.ml, price: size.price, sku: size.sku });
-                            }}
-                            className="flex items-center justify-center gap-2 h-10 bg-primary text-primary-foreground font-body text-sm font-medium rounded-lg hover:bg-primary/80 transition-colors"
-                          >
-                            <ShoppingBag className="w-4 h-4" />
-                            Make it mine — ₹{perfume.sizes[0]?.price}
-                          </motion.button>
+                        <p className="font-body text-sm text-muted-foreground italic mb-2">{perfume.tagline}</p>
+                        {/* Match percentage */}
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                          <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: idx === 0 ? '95%' : '82%' }}
+                              transition={{ delay: 0.8 + idx * 0.2, duration: 1 }}
+                              className="h-full bg-primary rounded-full"
+                            />
+                          </div>
+                          <span className="font-mono text-xs text-primary">{idx === 0 ? '95' : '82'}%</span>
                         </div>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            const size = perfume.sizes[0];
+                            addItem({ perfumeId: perfume.id, name: perfume.name, size: size.ml, price: size.price, sku: size.sku });
+                          }}
+                          className="w-full flex items-center justify-center gap-2 h-10 bg-primary text-primary-foreground font-body text-sm font-medium rounded-lg hover:bg-primary/80 transition-colors"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                          Make it mine — ₹{perfume.sizes[0]?.price}
+                        </motion.button>
                       </motion.div>
                     );
                   })}
