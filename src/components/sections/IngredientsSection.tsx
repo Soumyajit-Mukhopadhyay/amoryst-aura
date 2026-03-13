@@ -22,29 +22,32 @@ const INGREDIENT_ORIGINS: IngredientOrigin[] = [
   {
     name: 'Jasmine Sambac', origin: 'Tamil Nadu', region: 'South India',
     description: 'The Indian jasmine — more indolic and heady. Picked at night when the flowers are fully open.',
-    usedIn: ['Elysium', 'Oasis'], position: { x: '55%', y: '78%' }, image: ingredientJasmine,
+    usedIn: ['Elysium', 'Oasis'], position: { x: '52%', y: '75%' }, image: ingredientJasmine,
   },
   {
     name: 'Mysore Sandalwood', origin: 'Karnataka', region: 'South India',
     description: 'One of the most precious woody materials in perfumery. Creamy, milky warmth.',
-    usedIn: ['Twilight', 'Oasis', 'Mirage'], position: { x: '48%', y: '72%' }, image: ingredientSandalwood,
+    usedIn: ['Twilight', 'Oasis', 'Mirage'], position: { x: '46%', y: '68%' }, image: ingredientSandalwood,
   },
   {
     name: 'Lotus Absolute', origin: 'Rajasthan', region: 'Western India',
     description: 'Extracted from lotus flowers grown in Rajasthani lakes. Aquatic but warm.',
-    usedIn: ['Oasis'], position: { x: '38%', y: '50%' }, image: ingredientLotus,
+    usedIn: ['Oasis'], position: { x: '35%', y: '48%' }, image: ingredientLotus,
   },
   {
     name: 'Kashmiri Saffron', origin: 'Pampore, Kashmir', region: 'Northern India',
     description: 'Harvested by hand in October, one filament at a time. The most expensive spice in the world.',
-    usedIn: ['Reserve: Saffron Dusk'], position: { x: '35%', y: '18%' }, image: ingredientSaffron,
+    usedIn: ['Reserve: Saffron Dusk'], position: { x: '40%', y: '18%' }, image: ingredientSaffron,
   },
   {
     name: 'Cardamom', origin: 'Kerala', region: 'Southwest India',
     description: 'Warm-spiced and slightly camphoraceous. Kerala cardamom is uniquely bright.',
-    usedIn: ['Horizon', 'Reserve: Saffron Dusk'], position: { x: '45%', y: '82%' }, image: ingredientCardamom,
+    usedIn: ['Horizon', 'Reserve: Saffron Dusk'], position: { x: '48%', y: '82%' }, image: ingredientCardamom,
   },
 ];
+
+// Accurate India map outline SVG path
+const INDIA_PATH = "M 45 4 L 48 3 L 52 4 L 56 3 L 60 5 L 63 4 L 67 6 L 70 5 L 73 8 L 71 12 L 74 14 L 72 17 L 74 20 L 76 22 L 74 25 L 76 28 L 78 32 L 80 28 L 82 25 L 84 28 L 82 32 L 80 36 L 78 34 L 76 36 L 78 40 L 80 44 L 82 48 L 80 52 L 78 56 L 76 60 L 74 64 L 70 68 L 66 72 L 62 76 L 58 80 L 56 84 L 54 88 L 52 92 L 50 96 L 48 94 L 50 90 L 48 86 L 46 90 L 44 86 L 42 82 L 40 78 L 38 74 L 36 70 L 34 66 L 32 62 L 30 58 L 28 54 L 26 50 L 24 46 L 22 42 L 24 38 L 26 34 L 28 30 L 30 26 L 32 22 L 34 18 L 36 14 L 38 10 L 40 8 L 42 6 L 45 4 Z";
 
 export function IngredientsSection() {
   const ref = useRef(null);
@@ -56,7 +59,6 @@ export function IngredientsSection() {
 
   return (
     <section id="ingredients" ref={ref} className="py-24 relative overflow-hidden">
-      {/* Parallax background glow */}
       <motion.div
         style={{ y: parallaxY }}
         className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-[120px] pointer-events-none"
@@ -88,15 +90,32 @@ export function IngredientsSection() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative aspect-[3/4] max-h-[600px] glass-panel p-8"
           >
-            <svg viewBox="0 0 100 120" className="w-full h-full" fill="none">
+            <svg viewBox="0 0 105 100" className="w-full h-full" fill="none">
+              {/* Glow behind map */}
+              <defs>
+                <filter id="mapGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+                </filter>
+              </defs>
               <path
-                d="M35 5 L55 3 L65 8 L72 5 L75 10 L68 15 L70 22 L75 25 L78 30 L80 40 L82 50 L78 60 L72 70 L65 80 L58 90 L52 100 L48 110 L45 105 L42 95 L38 85 L32 75 L28 65 L25 55 L22 45 L25 35 L28 25 L32 15 L35 5Z"
-                stroke="hsl(var(--amorist-gold) / 0.3)" strokeWidth="0.5"
-                fill="hsl(var(--amorist-gold) / 0.03)"
+                d={INDIA_PATH}
+                stroke="hsl(var(--primary) / 0.15)"
+                strokeWidth="1.5"
+                fill="none"
+                filter="url(#mapGlow)"
               />
+              <path
+                d={INDIA_PATH}
+                stroke="hsl(var(--primary) / 0.4)"
+                strokeWidth="0.5"
+                fill="hsl(var(--primary) / 0.03)"
+              />
+              {/* State boundary hints */}
+              <line x1="30" y1="55" x2="78" y2="55" stroke="hsl(var(--primary) / 0.08)" strokeWidth="0.3" strokeDasharray="2,2" />
+              <line x1="36" y1="40" x2="80" y2="40" stroke="hsl(var(--primary) / 0.08)" strokeWidth="0.3" strokeDasharray="2,2" />
             </svg>
 
-            {INGREDIENT_ORIGINS.map((ing) => (
+            {INGREDIENT_ORIGINS.map((ing, idx) => (
               <button
                 key={ing.name}
                 className="absolute group"
@@ -105,33 +124,52 @@ export function IngredientsSection() {
                 onMouseLeave={() => setActiveIngredient(null)}
                 onClick={() => setActiveIngredient(activeIngredient?.name === ing.name ? null : ing)}
               >
-                <span className="block w-3 h-3 rounded-full bg-primary relative">
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={inView ? { scale: 1 } : {}}
+                  transition={{ delay: 0.5 + idx * 0.15, type: 'spring' }}
+                  className="block w-3.5 h-3.5 rounded-full bg-primary relative cursor-pointer"
+                >
                   <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-30" />
-                </span>
+                  <span className="absolute -inset-1 rounded-full border border-primary/30" />
+                </motion.span>
+                {/* Label */}
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={inView ? { opacity: 1 } : {}}
+                  transition={{ delay: 0.8 + idx * 0.15 }}
+                  className="absolute left-5 top-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[9px] tracking-wider text-primary/60 uppercase"
+                >
+                  {ing.origin}
+                </motion.span>
               </button>
             ))}
 
-            {activeIngredient && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute bottom-4 left-4 right-4 glass-panel overflow-hidden z-10"
-              >
-                <div className="flex">
-                  <img src={activeIngredient.image} alt={activeIngredient.name} className="w-24 h-24 object-cover flex-shrink-0" />
-                  <div className="p-3">
-                    <div className="flex items-start gap-1 mb-1">
-                      <MapPin className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-display text-base text-foreground">{activeIngredient.name}</h4>
-                        <p className="font-mono text-[10px] text-primary tracking-wider">{activeIngredient.origin}</p>
+            {/* Active ingredient tooltip */}
+            <AnimatePresence>
+              {activeIngredient && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute bottom-4 left-4 right-4 glass-panel overflow-hidden z-10"
+                >
+                  <div className="flex">
+                    <img src={activeIngredient.image} alt={activeIngredient.name} className="w-24 h-24 object-cover flex-shrink-0" />
+                    <div className="p-3">
+                      <div className="flex items-start gap-1 mb-1">
+                        <MapPin className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-display text-base text-foreground">{activeIngredient.name}</h4>
+                          <p className="font-mono text-[10px] text-primary tracking-wider">{activeIngredient.origin}</p>
+                        </div>
                       </div>
+                      <p className="font-body text-xs text-muted-foreground">{activeIngredient.description}</p>
                     </div>
-                    <p className="font-body text-xs text-muted-foreground">{activeIngredient.description}</p>
                   </div>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Ingredient List */}
@@ -183,3 +221,6 @@ export function IngredientsSection() {
     </section>
   );
 }
+
+// Need AnimatePresence import
+import { AnimatePresence } from 'framer-motion';
