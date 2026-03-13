@@ -1,39 +1,27 @@
 import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { Gift, Star, Crown, Share2 } from 'lucide-react';
 
 const TIERS = [
-  {
-    name: 'Circle',
-    icon: Gift,
-    description: 'All Customers',
-    benefits: ['Story card with every order', 'Birthday month offer (15%)', 'Post-purchase fragrance journey'],
-    style: 'border-border/50',
-  },
-  {
-    name: 'Signature',
-    icon: Star,
-    description: '2nd Purchase',
-    benefits: ['Free 5ml sample per order', '10% refill pricing', 'Early access to new releases'],
-    style: 'border-primary/40 gold-glow',
-  },
-  {
-    name: 'Collectors',
-    icon: Crown,
-    description: '3rd+ Purchase / ₹5,000+',
-    benefits: ['Numbered limited editions', 'Annual fragrance gift', 'Personal concierge access'],
-    style: 'border-primary/60 gold-glow bg-secondary/30',
-  },
+  { name: 'Circle', icon: Gift, description: 'All Customers', benefits: ['Story card with every order', 'Birthday month offer (15%)', 'Post-purchase fragrance journey'], style: 'border-border/50' },
+  { name: 'Signature', icon: Star, description: '2nd Purchase', benefits: ['Free 5ml sample per order', '10% refill pricing', 'Early access to new releases'], style: 'border-primary/40 gold-glow' },
+  { name: 'Collectors', icon: Crown, description: '3rd+ Purchase / ₹5,000+', benefits: ['Numbered limited editions', 'Annual fragrance gift', 'Personal concierge access'], style: 'border-primary/60 gold-glow bg-secondary/30' },
 ];
 
 export function LoyaltySection() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-100px' });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const parallaxY = useTransform(scrollYProgress, [0, 1], [40, -40]);
 
   return (
-    <section id="loyalty" ref={ref} className="py-24 relative">
+    <section id="loyalty" ref={ref} className="py-24 relative overflow-hidden">
+      <motion.div
+        style={{ y: parallaxY }}
+        className="absolute bottom-0 left-1/3 w-80 h-80 rounded-full bg-primary/5 blur-[100px] pointer-events-none"
+      />
+
       <div className="container mx-auto px-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -46,7 +34,6 @@ export function LoyaltySection() {
           </h2>
         </motion.div>
 
-        {/* Tier Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           {TIERS.map((tier, i) => {
             const Icon = tier.icon;
@@ -56,7 +43,8 @@ export function LoyaltySection() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: i * 0.15 }}
-                className={`p-6 rounded-2xl border ${tier.style} transition-all hover:-translate-y-1`}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className={`p-6 rounded-2xl border ${tier.style} transition-all`}
               >
                 <Icon className="w-8 h-8 text-primary mb-4" />
                 <h3 className="font-display text-2xl text-foreground mb-1">{tier.name}</h3>
@@ -80,7 +68,6 @@ export function LoyaltySection() {
           })}
         </div>
 
-        {/* Referral */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -90,12 +77,16 @@ export function LoyaltySection() {
           <Share2 className="w-8 h-8 text-primary mx-auto mb-4" />
           <h3 className="font-display text-2xl text-foreground mb-3">Refer a Friend</h3>
           <p className="font-body text-muted-foreground mb-6">
-            When they place their first order, you both receive <span className="text-primary font-semibold">₹150 Amorist Credit</span> — applied automatically at checkout. This is a credit from us. Not a promotion. Just our way of saying thank you.
+            When they place their first order, you both receive <span className="text-primary font-semibold">₹150 Amorist Credit</span> — applied automatically at checkout.
           </p>
-          <button className="inline-flex items-center gap-2 h-11 px-6 bg-primary text-primary-foreground font-body font-medium tracking-wider rounded-lg hover:bg-primary/80 transition-colors">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="inline-flex items-center gap-2 h-11 px-6 bg-primary text-primary-foreground font-body font-medium tracking-wider rounded-lg hover:bg-primary/80 transition-colors"
+          >
             <Share2 className="w-4 h-4" />
             Share Your Link
-          </button>
+          </motion.button>
         </motion.div>
       </div>
     </section>
