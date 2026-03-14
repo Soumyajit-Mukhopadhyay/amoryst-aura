@@ -8,8 +8,7 @@ interface AmaraMessage {
   content: string;
 }
 
-// Generate a random session ID for this visitor (In real app, use auth token or cookies)
-const SESSION_ID = "session_" + Math.random().toString(36).substring(7);
+const CHAT_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/chat`;
 
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
