@@ -39,50 +39,32 @@ function getIngredientImage(name: string): string {
   return INGREDIENT_IMAGES[name] || ingredientSandalwood;
 }
 
-/* ── Spray particle animation ── */
+/* ── Spray particle animation - reduced to 12 particles ── */
 function SprayAnimation({ active, color }: { active: boolean; color: string }) {
   if (!active) return null;
-  const particles = Array.from({ length: 30 }, (_, i) => ({
+  const particles = Array.from({ length: 12 }, (_, i) => ({
     id: i,
-    x: (Math.random() - 0.5) * 200,
-    y: -Math.random() * 300 - 50,
-    size: Math.random() * 6 + 2,
-    delay: Math.random() * 0.3,
-    duration: Math.random() * 1.5 + 1,
+    x: (Math.random() - 0.5) * 150,
+    y: -Math.random() * 200 - 40,
+    size: Math.random() * 5 + 2,
+    delay: Math.random() * 0.2,
+    duration: Math.random() * 1 + 0.8,
   }));
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          initial={{ opacity: 0.9, x: 0, y: 0, scale: 0 }}
-          animate={{
-            opacity: [0.9, 0.6, 0],
-            x: p.x,
-            y: p.y,
-            scale: [0, 1.5, 0.5],
-          }}
+          initial={{ opacity: 0.8, x: 0, y: 0, scale: 0 }}
+          animate={{ opacity: [0.8, 0.4, 0], x: p.x, y: p.y, scale: [0, 1, 0.3] }}
           transition={{ duration: p.duration, delay: p.delay, ease: 'easeOut' }}
           style={{
-            position: 'absolute',
-            bottom: '40%',
-            left: '50%',
-            width: p.size,
-            height: p.size,
-            borderRadius: '50%',
+            position: 'absolute', bottom: '40%', left: '50%',
+            width: p.size, height: p.size, borderRadius: '50%',
             background: color,
-            filter: 'blur(1px)',
           }}
         />
       ))}
-      {/* Mist cloud */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.3 }}
-        animate={{ opacity: [0, 0.4, 0], scale: [0.3, 2, 3] }}
-        transition={{ duration: 2 }}
-        className="absolute bottom-1/3 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full"
-        style={{ background: `radial-gradient(circle, ${color}40, transparent)` }}
-      />
     </div>
   );
 }
