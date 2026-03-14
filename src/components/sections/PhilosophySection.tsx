@@ -2,26 +2,14 @@ import { useRef, useMemo } from 'react';
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import ingredientsImage from '@/assets/ingredients-dissolve.jpg';
 
-// Premium floating golden dust particles — large, bright, visible
+// Reduced to 6 particles for performance
 const PARTICLES = [
-  { left: '3%',  size: 8,  dur: 8,   delay: 0,   },
-  { left: '10%', size: 12, dur: 10,  delay: 1,   },
-  { left: '18%', size: 6,  dur: 7,   delay: 0.5, },
-  { left: '25%', size: 10, dur: 9,   delay: 2.5, },
-  { left: '32%', size: 14, dur: 11,  delay: 0.8, },
-  { left: '38%', size: 7,  dur: 7.5, delay: 3,   },
-  { left: '45%', size: 10, dur: 9.5, delay: 1.5, },
-  { left: '52%', size: 16, dur: 12,  delay: 0.3, },
-  { left: '58%', size: 8,  dur: 8,   delay: 2,   },
-  { left: '65%', size: 12, dur: 10,  delay: 1.2, },
-  { left: '72%', size: 6,  dur: 7,   delay: 3.5, },
-  { left: '78%', size: 14, dur: 11,  delay: 0.6, },
-  { left: '84%', size: 9,  dur: 8.5, delay: 2.2, },
-  { left: '90%', size: 11, dur: 9,   delay: 1.8, },
-  { left: '96%', size: 7,  dur: 7.5, delay: 0.4, },
-  { left: '8%',  size: 10, dur: 10,  delay: 4,   },
-  { left: '42%', size: 13, dur: 11,  delay: 3.2, },
-  { left: '68%', size: 8,  dur: 8,   delay: 4.5, },
+  { left: '10%', size: 8,  dur: 9,  delay: 0   },
+  { left: '30%', size: 10, dur: 10, delay: 1   },
+  { left: '50%', size: 12, dur: 11, delay: 0.5 },
+  { left: '65%', size: 8,  dur: 8,  delay: 2   },
+  { left: '80%', size: 10, dur: 9,  delay: 1.5 },
+  { left: '92%', size: 7,  dur: 8,  delay: 3   },
 ];
 
 export function PhilosophySection() {

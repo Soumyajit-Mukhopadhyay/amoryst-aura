@@ -69,31 +69,34 @@ function SprayAnimation({ active, color }: { active: boolean; color: string }) {
   );
 }
 
-/* ── Mouse-tracked tilt card wrapper ── */
+/* ── Simplified tilt card - uses CSS transform instead of per-frame state ── */
 function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -12;
-    setTilt({ x: y, y: x });
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 8;
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -8;
+    cardRef.current.style.transform = `perspective(800px) rotateX(${y}deg) rotateY(${x}deg)`;
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (cardRef.current) {
+      cardRef.current.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg)';
+    }
   }, []);
 
   return (
-    <motion.div
+    <div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => setTilt({ x: 0, y: 0 })}
-      animate={{ rotateX: tilt.x, rotateY: tilt.y }}
-      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-      style={{ perspective: 1000, transformStyle: 'preserve-3d' }}
+      onMouseLeave={handleMouseLeave}
+      style={{ transition: 'transform 0.15s ease-out', transformStyle: 'preserve-3d' }}
       className={className}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 

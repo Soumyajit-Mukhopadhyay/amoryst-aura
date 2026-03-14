@@ -60,25 +60,17 @@ export function HeroSection({ onOpenQuiz }: HeroSectionProps) {
       {/* Bottom fade shadow to hide scaled edge */}
       <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-background via-background/90 to-transparent z-10 pointer-events-none" />
 
-      {/* Floating particles effect */}
+      {/* Reduced floating particles - 10 instead of 40, CSS animations instead of JS */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        {[...Array(40)].map((_, i) => (
-          <motion.div
+        {[...Array(10)].map((_, i) => (
+          <div
             key={i}
-            className="absolute w-1.5 h-1.5 rounded-full bg-primary/60 shadow-[0_0_12px_rgba(255,215,0,1)]"
+            className="absolute w-1 h-1 rounded-full bg-primary/40 animate-pulse"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -60, 0],
-              opacity: [0.2, 1, 0.2],
-              scale: [1, 2.5, 1],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 5,
-              repeat: Infinity,
-              delay: Math.random() * 3,
+              left: `${10 + i * 9}%`,
+              top: `${15 + (i * 7) % 70}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${3 + i % 3}s`,
             }}
           />
         ))}
