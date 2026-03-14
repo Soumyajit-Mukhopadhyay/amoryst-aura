@@ -83,13 +83,19 @@ export function AIAssistant() {
     const userText = input;
     setInput('');
     setIsTyping(true);
-    setMessages(prev => [...prev, { role: 'user', content: userText }]);
+    const updatedMessages: AmaraMessage[] = [...messages, { role: 'user', content: userText }];
+    setMessages(updatedMessages);
     
     try {
-      const response = await fetch("http://localhost:8000/chat", {
+      // Send conversation history (excluding initial greeting) to edge function
+      const apiMessages = updatedMessages
+        .filter(m => !(m.role === 'assistant' && m === messages[0]))
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: SESSION_ID, message: userText })
+        body: JSON.stringify({ messages: apiMessages })
       });
 
       if (!response.ok) throw new Error("Backend API Error");
@@ -104,7 +110,7 @@ export function AIAssistant() {
       
     } catch (error) {
       console.error("AI API Error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "I apologize, my connection to the backend seems to have drifted. Ensure the Python API is running on port 8000." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "I apologize, my connection seems to have drifted. Please try again in a moment." }]);
     } finally {
       setIsTyping(false);
     }
