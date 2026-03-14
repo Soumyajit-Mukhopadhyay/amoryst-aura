@@ -12,6 +12,7 @@ import { Footer } from '@/components/sections/Footer';
 import { ScentFinder } from '@/components/sections/ScentFinder';
 import { AIAssistant } from '@/components/sections/AIAssistant';
 import { OfflineStoresSection } from '@/components/sections/OfflineStoresSection';
+import SustainabilitySection from '@/components/sections/SustainabilitySection';
 
 const Index = () => {
   const [quizOpen, setQuizOpen] = useState(false);
@@ -33,6 +34,8 @@ const Index = () => {
 
       {/* Transition: Hero → Collections */}
       <div className="h-24 bg-gradient-to-b from-background via-background to-background pointer-events-none -mt-24 relative z-20" />
+
+      <SustainabilitySection />
 
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/5 to-background pointer-events-none" />

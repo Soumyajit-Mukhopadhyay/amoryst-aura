@@ -3,7 +3,7 @@ import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'fra
 import { getMainPerfumes, type Perfume } from '@/data/perfumes';
 import { BOTTLE_IMAGES, BOTTLE_VIDEOS } from '@/data/bottleImages';
 import { useCartStore } from '@/store/useCartStore';
-import { ShoppingBag, Clock, Wind, Layers, X, ChevronRight, Droplets, Star, Heart, Search } from 'lucide-react';
+import { ShoppingBag, Clock, Wind, Layers, X, ChevronRight, Droplets, Search } from 'lucide-react';
 
 // Ingredient images for bisect
 import ingredientJasmine from '@/assets/ingredient-jasmine.jpg';
@@ -117,6 +117,9 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
 
 /* ── Bisect fullscreen overlay - video stays at top ── */
 function BisectView({ perfume, onClose }: { perfume: Perfume; onClose: () => void }) {
+  const [selectedSizeIdx, setSelectedSizeIdx] = useState(0);
+  const [purchaseType, setPurchaseType] = useState<'new' | 'refill'>('new');
+  const scrollRef = useRef<HTMLDivElement>(null);
   const videoSrc = BOTTLE_VIDEOS[perfume.id];
 
   return (
@@ -288,36 +291,64 @@ function BisectView({ perfume, onClose }: { perfume: Perfume; onClose: () => voi
             </div>
           </div>
 
-          {/* Wardrobe Pairing */}
-          <div className="border-t border-border/30 pt-6 mb-6">
-            <p className="font-mono text-[10px] text-muted-foreground tracking-wider uppercase mb-3">Wardrobe Pairing</p>
-            <div className="flex flex-wrap gap-2">
-              {perfume.season.includes('Winter') || perfume.season.includes('Autumn')
-                ? ['Dark blazers', 'Cashmere knits', 'Velvet', 'Leather jackets', 'Evening wear'].map(item => (
-                    <span key={item} className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-body text-muted-foreground">{item}</span>
-                  ))
-                : ['Linen shirts', 'Light cotton', 'Summer dresses', 'Casual chic', 'Resort wear'].map(item => (
-                    <span key={item} className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-body text-muted-foreground">{item}</span>
-                  ))
-              }
-            </div>
-          </div>
-
           <div className="border-t border-border/30 pt-6">
             <p className="font-body text-muted-foreground text-sm leading-relaxed mb-6">{perfume.story}</p>
+            
+            {/* Size Selector */}
+            <div className="flex gap-2 mb-6">
+              {perfume.sizes.map((s, idx) => (
+                <button
+                  key={s.sku}
+                  onClick={() => setSelectedSizeIdx(idx)}
+                  className={`flex-1 py-2 rounded-lg border font-body text-xs tracking-widest uppercase transition-all ${
+                    selectedSizeIdx === idx 
+                      ? 'bg-primary border-primary text-primary-foreground shadow-[0_0_15px_rgba(235,193,126,0.3)]' 
+                      : 'border-border/50 text-muted-foreground hover:border-primary/50'
+                  }`}
+                >
+                  {s.ml}ml
+                </button>
+              ))}
+            </div>
+
+            {/* Purchase Type Selector */}
+            <div className="flex bg-secondary/30 rounded-lg p-1 mb-6">
+              <button 
+                onClick={() => setPurchaseType('new')}
+                className={`flex-1 py-2 rounded-md text-[10px] font-mono tracking-wider transition-all ${purchaseType === 'new' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground/80'}`}
+              >
+                NEW BOTTLE
+              </button>
+              <button 
+                onClick={() => setPurchaseType('refill')}
+                className={`flex-1 py-2 rounded-md text-[10px] font-mono tracking-wider transition-all ${purchaseType === 'refill' ? 'bg-emerald-500 text-black shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground/80'}`}
+              >
+                ECO-REFILL (-20%)
+              </button>
+            </div>
+
             <div className="flex items-center justify-between">
               <div>
-                <span className="font-display text-2xl text-foreground">₹{perfume.sizes[0]?.price}</span>
-                {perfume.sizes[0] && typeof perfume.sizes[0].ml === 'number' && (
-                  <span className="text-muted-foreground font-body text-xs ml-2">/ {perfume.sizes[0].ml}ml</span>
-                )}
+                <span className="font-display text-2xl text-foreground">
+                  ₹{purchaseType === 'refill' 
+                    ? Math.floor(perfume.sizes[selectedSizeIdx]?.price * 0.8) 
+                    : perfume.sizes[selectedSizeIdx]?.price}
+                </span>
+                <span className="text-muted-foreground font-body text-xs ml-2">/ {perfume.sizes[selectedSizeIdx]?.ml}ml</span>
               </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                  const size = perfume.sizes[0];
-                  useCartStore.getState().addItem({ perfumeId: perfume.id, name: perfume.name, size: size.ml, price: size.price, sku: size.sku });
+                  const size = perfume.sizes[selectedSizeIdx];
+                  useCartStore.getState().addItem({ 
+                    perfumeId: perfume.id, 
+                    name: perfume.name, 
+                    size: size.ml, 
+                    price: size.price, 
+                    sku: size.sku,
+                    purchaseType: purchaseType
+                  });
                 }}
                 className="inline-flex items-center gap-2 h-11 px-6 bg-primary text-primary-foreground font-body font-medium tracking-wider rounded-lg hover:bg-primary/80 transition-colors"
               >
@@ -332,12 +363,138 @@ function BisectView({ perfume, onClose }: { perfume: Perfume; onClose: () => voi
   );
 }
 
+/* ── Individual Product Card ── */
+function ProductCard({ perfume, inView, index, onSpray, onBisect }: { 
+  perfume: Perfume; 
+  inView: boolean; 
+  index: number; 
+  onSpray: (id: string) => void;
+  onBisect: (p: Perfume) => void;
+}) {
+  const [selectedSizeIdx, setSelectedSizeIdx] = useState(0);
+  const [purchaseType, setPurchaseType] = useState<'new' | 'refill'>('new');
+  const addItem = useCartStore((s) => s.addItem);
+  const videoSrc = BOTTLE_VIDEOS[perfume.id];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="w-[340px] flex-shrink-0 group"
+    >
+      <TiltCard className="glass-panel overflow-hidden hover:-translate-y-3 transition-all duration-500 hover:border-primary/30">
+        <div className="relative h-[380px] overflow-hidden bg-background cursor-pointer"
+          onClick={() => onSpray(perfume.id)}
+        >
+          {videoSrc ? (
+            <video autoPlay muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" poster={BOTTLE_IMAGES[perfume.id]}>
+              <source src={videoSrc} type="video/mp4" />
+            </video>
+          ) : (
+            <motion.img src={BOTTLE_IMAGES[perfume.id]} alt={perfume.name} className="w-full h-full object-cover" whileHover={{ scale: 1.08, rotate: 2 }} transition={{ duration: 0.6 }} />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+          <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-background/60 backdrop-blur-sm rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+            <Droplets className="w-3 h-3" />
+            <span className="font-mono text-[9px] tracking-wider uppercase">Tap to spray</span>
+          </div>
+          {perfume.bestSeller && (
+            <span className="absolute top-4 left-4 px-3 py-1 bg-primary/90 text-primary-foreground text-xs font-body font-semibold rounded-full tracking-wider uppercase">Best Seller</span>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-full border border-primary/30 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            onClick={(e) => { e.stopPropagation(); onBisect(perfume); }}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="font-mono text-[10px] tracking-wider uppercase">Bisect</span>
+          </motion.button>
+        </div>
+
+        <div className="p-6">
+          <h3 className="font-display text-2xl text-foreground mb-1">{perfume.name}</h3>
+          <p className="font-body text-sm text-muted-foreground mb-4 italic">{perfume.tagline}</p>
+          <div className="flex items-center gap-4 mb-4 text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              <span className="font-body text-xs">{perfume.longevity}h</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Wind className="w-3 h-3" />
+              <span className="font-body text-xs">{perfume.sillage}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mb-3">
+            {perfume.sizes.map((s, idx) => (
+              <button
+                key={s.sku}
+                onClick={() => setSelectedSizeIdx(idx)}
+                className={`flex-1 py-2 rounded-lg border font-body text-[10px] tracking-widest uppercase transition-all ${
+                  selectedSizeIdx === idx ? 'bg-primary border-primary text-primary-foreground shadow-[0_0_10px_rgba(235,193,126,0.3)]' : 'border-border/50 text-muted-foreground hover:border-primary/50'
+                }`}
+              >
+                {s.ml}ml
+              </button>
+            ))}
+          </div>
+
+          <div className="flex bg-secondary/30 rounded-lg p-0.5 mb-5">
+            <button 
+              onClick={() => setPurchaseType('new')}
+              className={`flex-1 py-1.5 rounded-md text-[9px] font-mono tracking-wider transition-all ${purchaseType === 'new' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+            >
+              NEW
+            </button>
+            <button 
+              onClick={() => setPurchaseType('refill')}
+              className={`flex-1 py-1.5 rounded-md text-[9px] font-mono tracking-wider transition-all ${purchaseType === 'refill' ? 'bg-emerald-500/90 text-black shadow-sm font-bold' : 'text-muted-foreground'}`}
+            >
+              REFILL (-20%)
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-display text-xl text-foreground">
+                ₹{purchaseType === 'refill' 
+                  ? Math.floor(perfume.sizes[selectedSizeIdx]?.price * 0.8) 
+                  : perfume.sizes[selectedSizeIdx]?.price}
+              </span>
+              <span className="text-muted-foreground font-body text-xs ml-1">/ {perfume.sizes[selectedSizeIdx]?.ml}ml</span>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                const size = perfume.sizes[selectedSizeIdx];
+                addItem({ 
+                  perfumeId: perfume.id, 
+                  name: perfume.name, 
+                  size: size.ml, 
+                  price: size.price, 
+                  sku: size.sku,
+                  purchaseType: purchaseType
+                });
+              }}
+              className="p-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 transition-colors shadow-[0_0_15px_rgba(235,193,126,0.3)]"
+            >
+              <ShoppingBag className="w-4 h-4" />
+            </motion.button>
+          </div>
+        </div>
+      </TiltCard>
+    </motion.div>
+  );
+}
+
 /* ── Main Collection Section ── */
 export function CollectionsSection() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-100px' });
   const perfumes = getMainPerfumes();
-  const addItem = useCartStore((s) => s.addItem);
   const [bisectedPerfume, setBisectedPerfume] = useState<Perfume | null>(null);
   const [sprayingId, setSprayingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -361,29 +518,15 @@ export function CollectionsSection() {
 
   return (
     <section id="collections" ref={ref} className="pt-16 pb-8 md:pt-20 md:pb-10 relative overflow-hidden">
-      <motion.div
-        style={{ y: parallaxY }}
-        className="absolute -top-20 right-0 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[150px] pointer-events-none"
-      />
+      <motion.div style={{ y: parallaxY }} className="absolute -top-20 right-0 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[150px] pointer-events-none" />
 
       <div className="container mx-auto px-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-10"
-        >
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8 }} className="text-center mb-10">
           <p className="font-mono text-xs tracking-[0.3em] text-primary mb-4 uppercase">The Collection</p>
           <h2 className="font-display text-4xl md:text-6xl font-light text-foreground mb-4">Eight Signatures</h2>
-          <p className="font-body text-muted-foreground max-w-md mx-auto mb-8">
-            Each crafted for a version of you. Choose the one that speaks.
-          </p>
-
+          <p className="font-body text-muted-foreground max-w-md mx-auto mb-8">Each crafted for a version of you. Choose the one that speaks.</p>
           <div className="relative max-w-md mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-muted-foreground" />
-            </div>
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="h-5 w-5 text-muted-foreground" /></div>
             <input
               type="text"
               placeholder="Search by name, scent family, or feeling..."
@@ -394,151 +537,20 @@ export function CollectionsSection() {
           </div>
         </motion.div>
 
-        {/* Scrollable Video Cards with Tilt */}
         <div className="overflow-x-auto pb-8 -mx-6 px-6 scrollbar-hide min-h-[500px]">
           {filteredPerfumes.length === 0 ? (
-            <div className="w-full text-center py-20 text-muted-foreground font-body">
-              No signatures match your search. Try another feeling or scent family.
-            </div>
+            <div className="w-full text-center py-20 text-muted-foreground font-body">No signatures match your search.</div>
           ) : (
             <div className="flex gap-6 min-w-max">
-              {filteredPerfumes.map((perfume, i) => {
-              const videoSrc = BOTTLE_VIDEOS[perfume.id];
-              const isSpraying = sprayingId === perfume.id;
-              return (
-                <motion.div
-                  key={perfume.id}
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={inView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.6, delay: i * 0.1 }}
-                  className="w-[340px] flex-shrink-0 group"
-                >
-                  <TiltCard className="glass-panel overflow-hidden hover:-translate-y-3 transition-all duration-500 hover:border-primary/30">
-                    {/* Video / Image */}
-                    <div className="relative h-[380px] overflow-hidden bg-background cursor-pointer"
-                      onClick={() => handleSpray(perfume.id)}
-                    >
-                      {videoSrc ? (
-                        <video
-                          autoPlay muted loop playsInline
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                          poster={BOTTLE_IMAGES[perfume.id]}
-                        >
-                          <source src={videoSrc} type="video/mp4" />
-                        </video>
-                      ) : (
-                        <motion.img
-                          src={BOTTLE_IMAGES[perfume.id]}
-                          alt={perfume.name}
-                          className="w-full h-full object-cover"
-                          whileHover={{ scale: 1.08, rotate: 2 }}
-                          transition={{ duration: 0.6 }}
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-
-                      {/* Spray animation */}
-                      <SprayAnimation active={isSpraying} color={perfume.bottle.particleColor} />
-
-                      {/* Spray hint */}
-                      <motion.div
-                        initial={false}
-                        animate={{ opacity: isSpraying ? 0 : 1 }}
-                        className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-background/60 backdrop-blur-sm rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Droplets className="w-3 h-3" />
-                        <span className="font-mono text-[9px] tracking-wider uppercase">Tap to spray</span>
-                      </motion.div>
-
-                      {/* Badges */}
-                      {perfume.bestSeller && (
-                        <span className="absolute top-4 left-4 px-3 py-1 bg-primary/90 text-primary-foreground text-xs font-body font-semibold rounded-full tracking-wider uppercase">
-                          Best Seller
-                        </span>
-                      )}
-                      {perfume.limited && (
-                        <span className="absolute top-4 left-4 px-3 py-1 bg-destructive/90 text-destructive-foreground text-xs font-body font-semibold rounded-full tracking-wider uppercase">
-                          {perfume.bottlesRemaining}/{perfume.totalBottles} Left
-                        </span>
-                      )}
-
-                      {/* Bisect Button */}
-                      <motion.button
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-full border border-primary/30 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setBisectedPerfume(perfume);
-                        }}
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                        <span className="font-mono text-[10px] tracking-wider uppercase">Bisect</span>
-                      </motion.button>
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-6">
-                      {perfume.personality && (
-                        <p className="font-mono text-xs tracking-widest text-primary mb-2 uppercase">{perfume.personality}</p>
-                      )}
-                      <h3 className="font-display text-2xl text-foreground mb-1">{perfume.name}</h3>
-                      <p className="font-body text-sm text-muted-foreground mb-4 italic">{perfume.tagline}</p>
-
-                      <div className="flex items-center gap-4 mb-4 text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span className="font-body text-xs">{perfume.longevity}h</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Wind className="w-3 h-3" />
-                          <span className="font-body text-xs">{perfume.sillage}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-5">
-                        {perfume.character.map((c) => (
-                          <span key={c} className="px-2 py-0.5 rounded-full border border-border text-xs font-body text-muted-foreground">
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-display text-xl text-foreground">₹{perfume.sizes[0]?.price}</span>
-                          {perfume.sizes[0] && typeof perfume.sizes[0].ml === 'number' && (
-                            <span className="text-muted-foreground font-body text-xs ml-1">/ {perfume.sizes[0].ml}ml</span>
-                          )}
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => {
-                            const size = perfume.sizes[0];
-                            addItem({ perfumeId: perfume.id, name: perfume.name, size: size.ml, price: size.price, sku: size.sku });
-                          }}
-                          className="p-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 transition-colors"
-                        >
-                          <ShoppingBag className="w-4 h-4" />
-                        </motion.button>
-                      </div>
-                    </div>
-                  </TiltCard>
-                </motion.div>
-              );
-            })}
+              {filteredPerfumes.map((perfume, i) => (
+                <ProductCard key={perfume.id} perfume={perfume} inView={inView} index={i} onSpray={handleSpray} onBisect={setBisectedPerfume} />
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Fullscreen Bisect Overlay */}
-      <AnimatePresence>
-        {bisectedPerfume && (
-          <BisectView perfume={bisectedPerfume} onClose={() => setBisectedPerfume(null)} />
-        )}
-      </AnimatePresence>
+      <AnimatePresence>{bisectedPerfume && <BisectView perfume={bisectedPerfume} onClose={() => setBisectedPerfume(null)} />}</AnimatePresence>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, X, Menu, Sparkles } from 'lucide-react';
+import { ShoppingBag, X, Menu, Sparkles, Plus, Minus, CheckCircle2 } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { BOTTLE_IMAGES } from '@/data/bottleImages';
 import logoImage from '@/assets/amorist-logo.png';
@@ -10,7 +10,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ onOpenQuiz }: NavbarProps) {
-  const { items, isOpen, toggleCart, setCartOpen, removeItem, totalPrice, totalItems } = useCartStore();
+  const { items, isOpen, toggleCart, setCartOpen, removeItem, updateQuantity, totalPrice, totalItems, notification } = useCartStore();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -79,6 +79,26 @@ export function Navbar({ onOpenQuiz }: NavbarProps) {
         </div>
       </motion.nav>
 
+      {/* Floating Notification */}
+      <AnimatePresence>
+        {notification.visible && (
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            className="fixed top-24 right-6 z-[100] glass-panel px-6 py-4 flex items-center gap-4 border-primary/30 shadow-[0_0_30px_rgba(235,193,126,0.15)]"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-display text-sm text-foreground">{notification.message}</p>
+              <p className="font-body text-xs text-muted-foreground">{notification.itemName}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Cart Drawer */}
       <AnimatePresence>
         {isOpen && (
@@ -107,16 +127,44 @@ export function Navbar({ onOpenQuiz }: NavbarProps) {
               {items.length === 0 ? (
                 <p className="text-muted-foreground font-body text-center mt-12">Your cart is empty</p>
               ) : (
-                <div className="flex-1 overflow-y-auto space-y-4">
+                <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                   {items.map((item) => (
-                    <div key={item.sku} className="flex items-center gap-4 p-3 rounded-lg bg-secondary/30">
-                      <img src={BOTTLE_IMAGES[item.perfumeId] || ''} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />
-                      <div className="flex-1">
-                        <p className="font-display text-sm text-foreground">{item.name}</p>
-                        <p className="text-muted-foreground text-xs font-body">{item.size}ml × {item.quantity}</p>
-                        <p className="text-primary font-body font-semibold text-sm">₹{item.price * item.quantity}</p>
+                    <div key={item.sku} className="flex items-center gap-4 p-4 rounded-lg bg-secondary/30 border border-border/50 group transition-all hover:border-primary/30">
+                      <div className="w-20 h-20 shrink-0 overflow-hidden rounded-lg bg-background">
+                        <img src={BOTTLE_IMAGES[item.perfumeId] || ''} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
-                      <button onClick={() => removeItem(item.sku)} className="text-muted-foreground hover:text-destructive">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-display text-base text-foreground truncate">{item.name}</p>
+                          {item.purchaseType === 'refill' && (
+                            <span className="shrink-0 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-mono border border-emerald-500/30 rounded">
+                              REFILL
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground text-xs font-body mb-2">{item.size}ml</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center border border-border/50 rounded-md bg-background/50 overflow-hidden">
+                            <button 
+                              onClick={() => updateQuantity(item.sku, -1)}
+                              className="p-1 px-2 hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="px-2 font-mono text-xs text-foreground min-w-[24px] text-center">
+                              {item.quantity}
+                            </span>
+                            <button 
+                              onClick={() => updateQuantity(item.sku, 1)}
+                              className="p-1 px-2 hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="text-primary font-mono font-semibold text-sm">₹{item.price * item.quantity}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => removeItem(item.sku)} className="text-muted-foreground/50 hover:text-destructive transition-colors shrink-0">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
@@ -125,13 +173,19 @@ export function Navbar({ onOpenQuiz }: NavbarProps) {
               )}
 
               {items.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-border">
-                  <div className="flex justify-between mb-4">
-                    <span className="text-foreground font-body">Total</span>
-                    <span className="text-primary font-display text-xl">₹{totalPrice()}</span>
+                <div className="mt-auto pt-6 border-t border-border/50">
+                  <div className="flex justify-between mb-6">
+                    <div>
+                      <span className="text-muted-foreground font-body block text-xs uppercase tracking-widest">Total cost</span>
+                      <span className="text-primary font-display text-2xl drop-shadow-[0_0_10px_rgba(235,193,126,0.3)]">₹{totalPrice()}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-muted-foreground font-body block text-xs uppercase tracking-widest">Items</span>
+                      <span className="text-foreground font-display text-2xl">{totalItems()}</span>
+                    </div>
                   </div>
-                  <button className="w-full py-3 bg-primary text-primary-foreground font-body font-semibold tracking-wider rounded-lg hover:bg-primary/90 transition-colors">
-                    Checkout
+                  <button className="w-full py-4 bg-primary text-primary-foreground font-body font-semibold tracking-widest uppercase rounded-lg hover:bg-primary/90 transition-all duration-300 shadow-[0_0_20px_rgba(235,193,126,0.3)] hover:shadow-[0_0_30px_rgba(235,193,126,0.5)]">
+                    Checkout Now
                   </button>
                 </div>
               )}
