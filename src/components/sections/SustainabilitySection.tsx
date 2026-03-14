@@ -79,7 +79,7 @@ const SustainabilitySection = () => {
             className="text-lg text-gray-400 leading-relaxed"
           >
             Sustainability isn't a compromise; it's the ultimate refinement. 
-            Amoryst Aura introduces the Refill Revolution—where your signature bottle 
+            Amoryst Aura introduces the Refill Revolution, where your signature bottle 
             remains a permanent fixture of your vanity, while our refill rituals 
             minimize environmental footprint.
           </motion.p>

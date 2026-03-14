@@ -22,7 +22,7 @@ interface IngredientOrigin {
 const INGREDIENT_ORIGINS: IngredientOrigin[] = [
   {
     name: 'Jasmine Sambac', origin: 'Tamil Nadu', region: 'South India',
-    description: 'The Indian jasmine — more indolic and heady. Picked at night when the flowers are fully open.',
+    description: 'The Indian jasmine : more indolic and heady. Picked at night when the flowers are fully open.',
     usedIn: ['Elysium', 'Oasis'], location: { lat: 10.7905, lng: 78.7047 }, image: ingredientJasmine,
   },
   {

@@ -1,73 +1,60 @@
-# Welcome to your Lovable project
+# Amoryst Aura | Luxury Fragrance Rituals
 
-## Project info
+Welcome to the digital home of **Amoryst Aura**, a hyper-premium fragrance brand that redefines the art of perfumery. We blend centuries-old olfactory traditions with cutting-edge technology to offer an unparalleled, personalized fragrance experience.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Our Brand Philosophy
 
-## How can I edit this code?
+Amoryst Aura is not just about smelling good; it's about discovering your olfactory identity. We believe that a fragrance should be as unique as the person wearing it, acting as an invisible aura that leaves a lasting impression. 
 
-There are several ways of editing your application.
+Our core values are:
+1.  **Uncompromising Luxury**: We source only the rarest, highest-grade absolute ingredients from around the world.
+2.  **Technological Alchemy**: We leverage Artificial Intelligence (AI) and 3D visualization to guide our customers to their perfect scent match in the digital space.
+3.  **Sustainable Legacy**: True luxury should protect the world it borrows from.
 
-**Use Lovable**
+## The Amoryst Strategy
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Our business strategy revolves around three main pillars:
 
-Changes made via Lovable will be committed automatically to this repo.
+### 1. The AI Concierge & Scent Finder
+We understand that buying fragrances online is challenging. To solve this, we developed "Amara," an intelligent AI concierge. Amara utilizes an advanced Retrieval-Augmented Generation (RAG) model, ingesting our brand guidelines, ingredient catalogs, and customer preferences to act as a virtual sommelier of scent. 
 
-**Use your preferred IDE**
+Our interactive **Scent Finder Quiz** goes beyond simple questions, analyzing personality, desired moments (e.g., Midnight Masquerade, Boardroom), and emotional resonance to recommend the perfect match from our collection.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 2. Immersive 3D Experience (The Wardrobe)
+Instead of static images, our online boutique features a "Fragrance Wardrobe" entirely rendered in real-time 3D. Customers can interact with our meticulously designed, jewel-cut flacons, rotating them to appreciate the craftsmanship before purchase. This interaction bridges the gap between digital convenience and physical luxury.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 3. The "Forever Bottle" & Eco-Refill System
+We are pioneering sustainability in the luxury sector with our "Cycle of Scent" initiative. 
+*   **The Artifact**: Our primary 100ml bottles are heavy, artisanal glass designed to be kept forever as an objet d'art.
+*   **The Refill**: Customers can purchase eco-refill pouches that use 85% less plastic and glass.
+*   **The Reward**: Engaging with our refill system grants a perpetual 20% discount on the refill price, encouraging long-term brand loyalty and environmental responsibility.
 
-Follow these steps:
+## Our Collection
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Our debut lineup features masterful compositions:
+*   **Twilight**: A mysterious blend of Midnight Jasmine and Smoked Vanilla.
+*   **Horizon**: A fresh, oceanic whisper with Sea Salt and Bergamot.
+*   **Eclipse**: An intense, woody statement of Oud and Black Pepper.
+*   **Oasis**: A lush, green sanctuary of Fig Leaf and Vetiver.
+*   **Mirage**: A fleeting, ethereal floral with White Lotus and Musks.
+*   **Elysium**: The pinnacle of bright, joyful citrus and Neroli.
+*   **Reserve Saffron**: A limited edition, opulent spicy floral.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Technology Stack
 
-# Step 3: Install the necessary dependencies.
-npm i
+Amoryst Aura's digital experience is built with modern, performant technologies:
+*   **Frontend**: React, TypeScript, Vite, Tailwind CSS.
+*   **3D Rendering**: Three.js, React Three Fiber (R3F), Drei.
+*   **Animations**: Framer Motion, GSAP.
+*   **AI Backend**: Python, LangChain, LangGraph, Google Gemini, FAISS (Vector Database).
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Global Boutiques
 
-**Edit a file directly in GitHub**
+While our digital experience is global, our physical "Aura Sanctuaries" offer in-person consultations in key luxury capitals:
+*   Paris (Le Marais)
+*   London (Mayfair)
+*   New York (SoHo)
+*   Tokyo (Ginza)
+*   Dubai (DIFC)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Join the Refill Revolution and discover your signature aura.

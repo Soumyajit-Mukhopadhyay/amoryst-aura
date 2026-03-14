@@ -34,7 +34,7 @@ export function PhilosophySection() {
   const paragraphs = [
     { title: 'Honest.', text: "At Amorist, the price on the bottle is the price. No ₹2,499 fictions. No fake urgency. Just fragrance worth what we ask." },
     { title: 'Indian.', text: "These are not European fragrances in Indian bottles. Jasmine from Tamil Nadu. Saffron from Kashmir. Lotus from Rajasthan. Every base note has an address." },
-    { title: 'Yours.', text: "You don't need twelve perfumes. You need one that is yours — and perhaps one for when you become someone else for an evening." },
+    { title: 'Yours.', text: "You don't need twelve perfumes. You need one that is yours; and perhaps one for when you become someone else for an evening." },
   ];
 
   return (

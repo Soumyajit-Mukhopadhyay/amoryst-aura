@@ -1,8 +1,5 @@
-import sys
-import duckduckgo_search
-
-sys.modules["ddgs"] = duckduckgo_search
-
+import datetime
+from ddgs import DDGS
 import os
 from dotenv import load_dotenv
 from pydantic import SecretStr
@@ -12,7 +9,6 @@ import operator
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
-from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import tool
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
@@ -31,18 +27,26 @@ llm = ChatGoogleGenerativeAI(
     max_tokens=2048,
 )
 
-# Initialize RAG Pipeline
-loader = TextLoader("knowledge.md")
-docs = loader.load()
-embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/gemini-embedding-001",
-    api_key=SecretStr(gemini_api_key) if gemini_api_key is not None else None,
-)
-vector_store = FAISS.from_documents(docs, embeddings)
-retriever = vector_store.as_retriever()
+_retriever = None
 
-# Initialize Web Search
-search_web_tool = DuckDuckGoSearchRun()
+def get_retriever():
+    global _retriever
+    if _retriever is None:
+        loaders = [
+            TextLoader("knowledge.md"),
+            TextLoader("../README.md")
+        ]
+        docs = []
+        for loader in loaders:
+            docs.extend(loader.load())
+
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/gemini-embedding-001",
+            api_key=SecretStr(gemini_api_key) if gemini_api_key is not None else None,
+        )
+        vector_store = FAISS.from_documents(docs, embeddings)
+        _retriever = vector_store.as_retriever()
+    return _retriever
 
 
 # Define State
@@ -55,14 +59,27 @@ class AgentState(TypedDict):
 @tool
 def search_knowledge(query: str) -> str:
     """Retrieve internal knowledge about Amoryst Aura's brand, perfumes, ingredients, or physical stores."""
-    docs = retriever.invoke(query)
+    r = get_retriever()
+    docs = r.invoke(query)
     return "\n\n".join([doc.page_content for doc in docs])
 
 
 @tool
 def search_the_web(query: str) -> str:
     """Search the public internet for real-time information not found in the brand knowledge."""
-    return search_web_tool.invoke(query)
+    try:
+        with DDGS() as ddgs:
+            results = [r for r in ddgs.text(query, max_results=5)]
+            if not results:
+                return "No useful results found."
+            return "\n\n".join([f"Title: {r['title']}\nSnippet: {r['body']}\nURL: {r['href']}" for r in results])
+    except Exception as e:
+        return f"Error performing web search: {e}"
+
+@tool
+def get_current_date_time() -> str:
+    """Get the current date and time."""
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 # UI Emulator Tools (These don't mutate backend state, but simply return structured data for the frontend to execute)
@@ -93,6 +110,7 @@ def open_scent_quiz() -> str:
 tools = [
     search_knowledge,
     search_the_web,
+    get_current_date_time,
     navigate_to_section,
     navigate_map,
     add_to_cart,
@@ -107,7 +125,7 @@ def call_model(state: AgentState):
     # Check if system prompt is present, if not insert it
     if not messages or not isinstance(messages[0], SystemMessage):
         system_msg = SystemMessage(
-            content="You are Amara, the hyper-premium, luxury fragrance concierge for Amoryst Aura. Your tone is sophisticated, slightly poetic, incredibly knowledgeable, but concise. ALWAYS use `search_knowledge` tool to look up catalog details or store locations. If a user asks a general question outside your knowledge, use `search_the_web`. If a user asks to buy or add to bag, use `add_to_cart`. If they want to navigate, use `navigate_to_section`. If they want you to show them a store on the map, use `navigate_map`."
+            content="You are Amara, the hyper-premium, luxury fragrance concierge for Amoryst Aura. Your tone is sophisticated, slightly poetic, incredibly knowledgeable, but concise. ALWAYS use `search_knowledge` tool to look up catalog details or store locations. If a user asks a general question outside your knowledge, use `search_the_web`. If they ask for the current date or time, use `get_current_date_time`. If a user asks to buy or add to bag, use `add_to_cart`. If they want to navigate, use `navigate_to_section`. If they want you to show them a store on the map, use `navigate_map`."
         )
         messages = [system_msg] + list(messages)
 

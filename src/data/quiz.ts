@@ -71,7 +71,7 @@ export const ARCHETYPES: Record<string, FragranceArchetype> = {
     primarySku: 'horizon',
     secondarySku: 'twilight',
     notForYouIf: 'You want something heavy, floral, or occasion-specific.',
-    discoveryLine: 'You need a scent that works as hard as you do — without announcing itself. Horizon is for the day you own before it begins.',
+    discoveryLine: 'You need a scent that works as hard as you do, without announcing itself. Horizon is for the day you own before it begins.',
   },
   magnetic: {
     id: 'magnetic',
@@ -105,7 +105,7 @@ export const ARCHETYPES: Record<string, FragranceArchetype> = {
     primarySku: 'eclipse',
     secondarySku: 'twilight',
     notForYouIf: 'You want something wearable every day or suitable for the office.',
-    discoveryLine: 'You do not want to be subtle. Eclipse is darker than Twilight and more dangerous — for the nights you intend to be remembered.',
+    discoveryLine: 'You do not want to be subtle. Eclipse is darker than Twilight and more dangerous, for the nights you intend to be remembered.',
   },
   elusive: {
     id: 'elusive',
@@ -156,7 +156,7 @@ export const ARCHETYPES: Record<string, FragranceArchetype> = {
     primarySku: 'reserve-saffron',
     secondarySku: 'twilight',
     notForYouIf: 'You want an everyday scent. This is not for every day.',
-    discoveryLine: 'You understand that some things are worth the price of rarity. Reserve: Saffron Dusk is 200 numbered bottles of Kashmiri saffron — and when they are gone, they are gone.',
+    discoveryLine: 'You understand that some things are worth the price of rarity. Reserve: Saffron Dusk is 200 numbered bottles of Kashmiri saffron, and when they are gone, they are gone.',
   },
 };
 
@@ -236,9 +236,9 @@ export const QUIZ = {
     {
       id: 'longevity', question: 'How long do you want the scent to last?', type: 'single-image-card',
       options: [
-        { id: 'light', label: '4-6 hours — a presence, not a statement', emoji: '🌸', tag: 'light', filter: ['elysium', 'oasis'] },
-        { id: 'medium', label: '8-10 hours — all day, effortlessly', emoji: '⏳', tag: 'medium', filter: ['horizon', 'twilight'] },
-        { id: 'long', label: '12+ hours — still there at midnight', emoji: '🌙', tag: 'long', filter: ['eclipse', 'mirage', 'reserve-saffron'] },
+        { id: 'light', label: '4-6 hours, a presence, not a statement', emoji: '🌸', tag: 'light', filter: ['elysium', 'oasis'] },
+        { id: 'medium', label: '8-10 hours, all day, effortlessly', emoji: '⏳', tag: 'medium', filter: ['horizon', 'twilight'] },
+        { id: 'long', label: '12+ hours, still there at midnight', emoji: '🌙', tag: 'long', filter: ['eclipse', 'mirage', 'reserve-saffron'] },
       ],
     },
     {
@@ -246,7 +246,7 @@ export const QUIZ = {
       options: [
         { id: 'first', label: 'This would be my first real perfume', emoji: '✨', tag: 'newcomer', boost: ['elysium', 'horizon'] },
         { id: 'casual', label: 'I wear perfume but never had a signature', emoji: '🔍', tag: 'explorer', boost: ['twilight', 'horizon'] },
-        { id: 'serious', label: 'I know what I like — I want exceptional', emoji: '🏆', tag: 'enthusiast', boost: ['mirage', 'reserve-saffron'] },
+        { id: 'serious', label: 'I know what I like; I want exceptional', emoji: '🏆', tag: 'enthusiast', boost: ['mirage', 'reserve-saffron'] },
         { id: 'gifting', label: 'I am buying this as a gift', emoji: '🎁', tag: 'gifter', boost: ['twilight', 'elysium'] },
       ],
     },

@@ -74,7 +74,7 @@ export const PERFUMES: Perfume[] = [
   },
   {
     id: 'horizon', name: 'Horizon', tagline: 'The scent of a future already decided.',
-    story: 'Clean, sharp, and purposeful — the fragrance of ambition that does not announce itself.',
+    story: 'Clean, sharp, and purposeful, the fragrance of ambition that does not announce itself.',
     personality: 'The Forward Self', occasionLabel: 'Mornings. Boardrooms. Days you lead.',
     scentFamily: 'Woody Aromatic', character: ['Crisp', 'Purposeful', 'Unassuming'],
     topNotes: ['Grapefruit', 'Cardamom', 'Sea Salt'], heartNotes: ['Cedarwood', 'Vetiver', 'Green Tea'],
@@ -102,7 +102,7 @@ export const PERFUMES: Perfume[] = [
   },
   {
     id: 'elysium', name: 'Elysium', tagline: 'The version of you that is simply, entirely present.',
-    story: 'Soft, luminous, and undemanding — worn not to impress but to inhabit your own ease.',
+    story: 'Soft, luminous, and undemanding, worn not to impress but to inhabit your own ease.',
     personality: 'The Present Self', occasionLabel: 'Weekends. Leisure. Simply being.',
     scentFamily: 'Floral Musk', character: ['Soft', 'Luminous', 'Effortless'],
     topNotes: ['Peach Blossom', 'Neroli', 'White Tea'], heartNotes: ['Jasmine Sambac', 'Ylang Ylang', 'Magnolia'],
