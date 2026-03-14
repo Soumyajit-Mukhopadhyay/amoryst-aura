@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { getMainPerfumes, type Perfume } from '@/data/perfumes';
 import { BOTTLE_IMAGES, BOTTLE_VIDEOS } from '@/data/bottleImages';
@@ -39,79 +39,105 @@ function getIngredientImage(name: string): string {
   return INGREDIENT_IMAGES[name] || ingredientSandalwood;
 }
 
-/* ── Spray particle animation ── */
+/* ── Lazy video: only loads/plays when visible ── */
+function LazyVideo({ src, poster, className }: { src: string; poster?: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (videoRef.current) {
+          if (entry.isIntersecting) {
+            videoRef.current.play().catch(() => {});
+          } else {
+            videoRef.current.pause();
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className={className}>
+      <video
+        ref={videoRef}
+        muted
+        loop
+        playsInline
+        preload="none"
+        poster={poster}
+        className="w-full h-full object-cover"
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+    </div>
+  );
+}
+
+/* ── Spray particle animation - reduced to 12 particles ── */
 function SprayAnimation({ active, color }: { active: boolean; color: string }) {
   if (!active) return null;
-  const particles = Array.from({ length: 30 }, (_, i) => ({
+  const particles = Array.from({ length: 12 }, (_, i) => ({
     id: i,
-    x: (Math.random() - 0.5) * 200,
-    y: -Math.random() * 300 - 50,
-    size: Math.random() * 6 + 2,
-    delay: Math.random() * 0.3,
-    duration: Math.random() * 1.5 + 1,
+    x: (Math.random() - 0.5) * 150,
+    y: -Math.random() * 200 - 40,
+    size: Math.random() * 5 + 2,
+    delay: Math.random() * 0.2,
+    duration: Math.random() * 1 + 0.8,
   }));
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          initial={{ opacity: 0.9, x: 0, y: 0, scale: 0 }}
-          animate={{
-            opacity: [0.9, 0.6, 0],
-            x: p.x,
-            y: p.y,
-            scale: [0, 1.5, 0.5],
-          }}
+          initial={{ opacity: 0.8, x: 0, y: 0, scale: 0 }}
+          animate={{ opacity: [0.8, 0.4, 0], x: p.x, y: p.y, scale: [0, 1, 0.3] }}
           transition={{ duration: p.duration, delay: p.delay, ease: 'easeOut' }}
           style={{
-            position: 'absolute',
-            bottom: '40%',
-            left: '50%',
-            width: p.size,
-            height: p.size,
-            borderRadius: '50%',
+            position: 'absolute', bottom: '40%', left: '50%',
+            width: p.size, height: p.size, borderRadius: '50%',
             background: color,
-            filter: 'blur(1px)',
           }}
         />
       ))}
-      {/* Mist cloud */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.3 }}
-        animate={{ opacity: [0, 0.4, 0], scale: [0.3, 2, 3] }}
-        transition={{ duration: 2 }}
-        className="absolute bottom-1/3 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full"
-        style={{ background: `radial-gradient(circle, ${color}40, transparent)` }}
-      />
     </div>
   );
 }
 
-/* ── Mouse-tracked tilt card wrapper ── */
+/* ── Simplified tilt card - uses CSS transform instead of per-frame state ── */
 function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -12;
-    setTilt({ x: y, y: x });
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 8;
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -8;
+    cardRef.current.style.transform = `perspective(800px) rotateX(${y}deg) rotateY(${x}deg)`;
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (cardRef.current) {
+      cardRef.current.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg)';
+    }
   }, []);
 
   return (
-    <motion.div
+    <div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => setTilt({ x: 0, y: 0 })}
-      animate={{ rotateX: tilt.x, rotateY: tilt.y }}
-      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-      style={{ perspective: 1000, transformStyle: 'preserve-3d' }}
+      onMouseLeave={handleMouseLeave}
+      style={{ transition: 'transform 0.15s ease-out', transformStyle: 'preserve-3d' }}
       className={className}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -157,7 +183,7 @@ function BisectView({ perfume, onClose }: { perfume: Perfume; onClose: () => voi
           className="relative w-56 h-56 md:w-64 md:h-64 mb-4 rounded-full overflow-hidden border-2 border-primary/20 flex-shrink-0"
         >
           {videoSrc ? (
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover">
+            <video autoPlay muted loop playsInline preload="metadata" className="w-full h-full object-cover">
               <source src={videoSrc} type="video/mp4" />
             </video>
           ) : (
@@ -388,11 +414,9 @@ function ProductCard({ perfume, inView, index, onSpray, onBisect }: {
           onClick={() => onSpray(perfume.id)}
         >
           {videoSrc ? (
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" poster={BOTTLE_IMAGES[perfume.id]}>
-              <source src={videoSrc} type="video/mp4" />
-            </video>
+            <LazyVideo src={videoSrc} poster={BOTTLE_IMAGES[perfume.id]} className="w-full h-full group-hover:scale-105 transition-transform duration-700" />
           ) : (
-            <motion.img src={BOTTLE_IMAGES[perfume.id]} alt={perfume.name} className="w-full h-full object-cover" whileHover={{ scale: 1.08, rotate: 2 }} transition={{ duration: 0.6 }} />
+            <img src={BOTTLE_IMAGES[perfume.id]} alt={perfume.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
           <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-background/60 backdrop-blur-sm rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">

@@ -49,18 +49,10 @@ export function HeroSection({ onOpenQuiz }: HeroSectionProps) {
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
           
-          {/* Interactive Glowing Orbs */}
+          {/* Single subtle glow orb - GPU optimized */}
           <motion.div 
             style={{ x: orbX, y: orbY }}
-            className="absolute top-1/4 right-1/4 w-[50vw] h-[50vw] max-w-[600px] max-h-[600px] bg-primary/30 rounded-full blur-[120px] pointer-events-none"
-          />
-          <motion.div 
-            style={{ x: useTransform(orbX, v => -v), y: useTransform(orbY, v => -v) }}
-            className="absolute bottom-1/4 left-1/4 w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] bg-primary/20 rounded-full blur-[100px] pointer-events-none"
-          />
-          <motion.div 
-            style={{ x: orbX, y: useTransform(orbY, v => -v) }}
-            className="absolute top-1/2 right-1/2 translate-x-1/2 -translate-y-1/2 w-[35vw] h-[35vw] max-w-[400px] max-h-[400px] bg-primary/20 rounded-full blur-[80px] pointer-events-none"
+            className="absolute top-1/4 right-1/4 w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] bg-primary/20 rounded-full blur-[100px] pointer-events-none will-change-transform"
           />
         </div>
       </motion.div>
@@ -68,25 +60,17 @@ export function HeroSection({ onOpenQuiz }: HeroSectionProps) {
       {/* Bottom fade shadow to hide scaled edge */}
       <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-background via-background/90 to-transparent z-10 pointer-events-none" />
 
-      {/* Floating particles effect */}
+      {/* Reduced floating particles - 10 instead of 40, CSS animations instead of JS */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        {[...Array(40)].map((_, i) => (
-          <motion.div
+        {[...Array(10)].map((_, i) => (
+          <div
             key={i}
-            className="absolute w-1.5 h-1.5 rounded-full bg-primary/60 shadow-[0_0_12px_rgba(255,215,0,1)]"
+            className="absolute w-1 h-1 rounded-full bg-primary/40 animate-pulse"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -60, 0],
-              opacity: [0.2, 1, 0.2],
-              scale: [1, 2.5, 1],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 5,
-              repeat: Infinity,
-              delay: Math.random() * 3,
+              left: `${10 + i * 9}%`,
+              top: `${15 + (i * 7) % 70}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${3 + i % 3}s`,
             }}
           />
         ))}
