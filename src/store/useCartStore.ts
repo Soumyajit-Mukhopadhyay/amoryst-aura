@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useGamificationStore } from './useGamificationStore';
 
 interface CartItem {
   perfumeId: string;
@@ -24,6 +25,9 @@ export const useCartStore = create<CartStore>((set, get) => ({
   items: [],
   isOpen: false,
   addItem: (item) => set((state) => {
+    // Award 10% of price as Aura Points for gamification
+    useGamificationStore.getState().addPoints(Math.floor(item.price * 0.1));
+
     const existing = state.items.find(i => i.sku === item.sku);
     if (existing) {
       return { items: state.items.map(i => i.sku === item.sku ? { ...i, quantity: i.quantity + 1 } : i) };

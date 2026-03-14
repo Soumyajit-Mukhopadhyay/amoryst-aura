@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Gift, Star, Crown, Share2, Copy, Check, Users, Sparkles, Award } from 'lucide-react';
+import { Gift, Star, Crown, Share2, Copy, Check, Users, Sparkles, Award, Flower2 } from 'lucide-react';
 
 const TIERS = [
-  { name: 'Circle', icon: Gift, points: '0', description: 'All Customers', benefits: ['Story card with every order', 'Birthday month offer (15%)', 'Post-purchase fragrance journey', '50 welcome points'], style: 'border-border/50' },
+  { name: 'Circle', icon: Gift, points: '0', description: 'All Customers', benefits: ['Story card with every order', 'Birthday month offer (15%)', 'Post-purchase fragrance journey', '50 welcome points'], style: 'border-primary/30 gold-glow' },
   { name: 'Signature', icon: Star, points: '500', description: '500+ Points', benefits: ['Free 5ml sample per order', '10% refill pricing', 'Early access to new releases', 'Double referral bonus'], style: 'border-primary/40 gold-glow' },
   { name: 'Collectors', icon: Crown, points: '1500', description: '1500+ Points', benefits: ['Numbered limited editions', 'Annual fragrance gift', 'Personal concierge access', 'Triple referral bonus'], style: 'border-primary/60 gold-glow bg-secondary/30' },
 ];
@@ -34,13 +34,24 @@ export function LoyaltySection() {
   };
 
   return (
-    <section id="loyalty" ref={ref} className="py-24 relative overflow-hidden">
+    <section id="loyalty" ref={ref} className="pt-8 md:pt-10 pb-16 md:pb-20 relative overflow-hidden">
+      {/* Premium Floating Animations */}
+      <motion.div animate={{ y: [0, -25, 0], rotate: [0, 10, 0], opacity: [0.1, 0.4, 0.1] }} transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }} className="absolute z-0 top-[5%] right-[10%] text-primary pointer-events-none">
+        <Sparkles className="w-8 h-8 md:w-12 md:h-12" />
+      </motion.div>
+      <motion.div animate={{ y: [0, 20, 0], rotate: [0, -20, 0], opacity: [0.1, 0.3, 0.1] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }} className="absolute z-0 top-[30%] left-[5%] text-primary pointer-events-none">
+        <Star className="w-6 h-6 md:w-10 md:h-10" />
+      </motion.div>
+      <motion.div animate={{ y: [0, -15, 0], rotate: [0, 15, 0], opacity: [0.05, 0.2, 0.05] }} transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }} className="absolute z-0 bottom-[20%] left-[15%] text-primary pointer-events-none">
+        <Flower2 className="w-8 h-8 md:w-14 md:h-14" />
+      </motion.div>
+
       <motion.div
         style={{ y: parallaxY }}
-        className="absolute bottom-0 left-1/3 w-80 h-80 rounded-full bg-primary/5 blur-[100px] pointer-events-none"
+        className="absolute bottom-0 left-1/3 w-80 h-80 rounded-full bg-primary/5 blur-[100px] pointer-events-none z-0"
       />
 
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}

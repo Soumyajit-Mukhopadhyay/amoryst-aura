@@ -1,77 +1,123 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, ShoppingBag } from 'lucide-react';
-import { PERFUMES, getPerfumeById } from '@/data/perfumes';
-import { BOTTLE_IMAGES } from '@/data/bottleImages';
+import { MessageCircle, X, Send, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 
-interface Message {
+interface AmaraMessage {
   role: 'user' | 'assistant';
   content: string;
-  perfumeRecommendation?: string;
 }
 
-const AMARA_RESPONSES: Record<string, string> = {
-  default: "That is a wonderful question. Let me think about which fragrance might be right for this moment. Could you tell me — is this for yourself, or are you considering a gift for someone?",
-  evening: "For an evening that truly matters, I would gently point you toward Twilight. It opens with black pepper and bergamot, and as the evening deepens, rose absolute and Mysore sandalwood take over. It is the kind of fragrance that makes people lean in rather than step back.",
-  daily: "For something you can wear every day without it wearing you, Horizon is exceptional. Cardamom from Kerala, cedarwood from Morocco — crisp and purposeful without ever being loud. It lasts a solid ten hours, which means it is still there when you get home.",
-  gift: "For a gift, the Discovery Kit is a beautiful entry point — three 5ml samples of their choosing, plus ₹150 credit toward their first full bottle. It says: 'I trust your taste.' Which is often the best gift of all.",
-  strong: "If longevity and presence are what matter most, Eclipse is unmistakable. Fourteen hours of wear. Black oud, labdanum, tonka bean. It is the fragrance you wear when you intend to leave an impression that lasts longer than the conversation.",
-  light: "Elysium is precisely this — a fragrance that exists close to the skin, like a second thought rather than a declaration. Jasmine sambac from Tamil Nadu, neroli, and a cashmeran base that people describe as addictive.",
-  special: "For something truly extraordinary, Reserve: Saffron Dusk is our collector piece. Kashmiri saffron harvested by hand in October 2025, only 200 numbered bottles exist. When they are gone, this fragrance disappears entirely.",
-};
-
-function getAmaraResponse(input: string): { text: string; perfumeId?: string } {
-  const lower = input.toLowerCase();
-  if (lower.includes('evening') || lower.includes('night') || lower.includes('date'))
-    return { text: AMARA_RESPONSES.evening, perfumeId: 'twilight' };
-  if (lower.includes('daily') || lower.includes('work') || lower.includes('office') || lower.includes('day'))
-    return { text: AMARA_RESPONSES.daily, perfumeId: 'horizon' };
-  if (lower.includes('gift') || lower.includes('someone'))
-    return { text: AMARA_RESPONSES.gift, perfumeId: 'sampler-kit' };
-  if (lower.includes('strong') || lower.includes('long') || lower.includes('last') || lower.includes('powerful'))
-    return { text: AMARA_RESPONSES.strong, perfumeId: 'eclipse' };
-  if (lower.includes('light') || lower.includes('soft') || lower.includes('gentle') || lower.includes('subtle'))
-    return { text: AMARA_RESPONSES.light, perfumeId: 'elysium' };
-  if (lower.includes('special') || lower.includes('rare') || lower.includes('collector') || lower.includes('unique'))
-    return { text: AMARA_RESPONSES.special, perfumeId: 'reserve-saffron' };
-  return { text: AMARA_RESPONSES.default };
-}
+// Generate a random session ID for this visitor (In real app, use auth token or cookies)
+const SESSION_ID = "session_" + Math.random().toString(36).substring(7);
 
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "Hello. I am Amara, your Amorist fragrance guide. Tell me — are you looking for something for yourself, or a gift for someone?" }
+  const [messages, setMessages] = useState<AmaraMessage[]>([
+    { role: 'assistant', content: "Hello. I am Amara, your Amorist fragrance guide. What kind of scent profile are you drawn to today?" }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const addItem = useCartStore((s) => s.addItem);
 
+  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const userMsg: Message = { role: 'user', content: input };
-    setMessages((prev) => [...prev, userMsg]);
+  // Execute UI automations sent by Python backend
+  const executeUIActions = (actions: any[]) => {
+    actions.forEach(action => {
+      try {
+        if (action.type === 'navigate') {
+          const element = document.getElementById(action.payload);
+          if (element) {
+            setIsOpen(false); // Close chat so they can see navigation
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        } 
+        else if (action.type === 'map') {
+          // Scroll to the stores section and dispatch event to fly map to store
+          const storesEl = document.getElementById('stores');
+          if (storesEl) {
+            setIsOpen(false);
+            storesEl.scrollIntoView({ behavior: 'smooth' });
+          }
+          // Give scroll time then dispatch fly-to event
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('fly-to-store', { detail: { storeId: action.payload } }));
+          }, 600);
+        }
+        else if (action.type === 'add_to_cart') {
+          // Note parameter might be string or int based on parsing
+          const sizeInt = parseInt(action.payload.size) || 50; 
+          useCartStore.getState().addItem({
+            perfumeId: action.payload.id,
+            name: action.payload.id.charAt(0).toUpperCase() + action.payload.id.slice(1), // Basic formatting
+            size: sizeInt,
+            price: sizeInt === 50 ? 12000 : 18000, 
+            sku: `${action.payload.id}-${sizeInt}`
+          });
+          useCartStore.getState().setCartOpen(true);
+        }
+        else if (action.type === 'open_quiz') {
+           setIsOpen(false);
+           // Requires exposing ScentFinder globally or via context, or dispatching an event.
+           // For now, we'll dispatch a custom window event that Index.tsx can listen to.
+           window.dispatchEvent(new CustomEvent('open-scent-quiz'));
+        }
+      } catch(e) {
+        console.error("Failed to execute UI action:", e);
+      }
+    });
+  };
+
+  const clearChat = async () => {
+    setMessages([{ role: 'assistant', content: "Memory cleared. How may I assist you anew?" }]);
+    try {
+      await fetch("http://localhost:8000/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: SESSION_ID })
+      });
+    } catch(e) {
+      console.error("Failed to clear backend memory", e);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
+    
+    const userText = input;
     setInput('');
     setIsTyping(true);
+    setMessages(prev => [...prev, { role: 'user', content: userText }]);
+    
+    try {
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: SESSION_ID, message: userText })
+      });
 
-    // Simulate AI response
-    setTimeout(() => {
-      const response = getAmaraResponse(input);
-      const assistantMsg: Message = {
-        role: 'assistant',
-        content: response.text,
-        perfumeRecommendation: response.perfumeId,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      if (!response.ok) throw new Error("Backend API Error");
+
+      const data = await response.json();
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      
+      if (data.ui_actions && data.ui_actions.length > 0) {
+        executeUIActions(data.ui_actions);
+      }
+      
+    } catch (error) {
+      console.error("AI API Error:", error);
+      setMessages(prev => [...prev, { role: 'assistant', content: "I apologize, my connection to the backend seems to have drifted. Ensure the Python API is running on port 8000." }]);
+    } finally {
       setIsTyping(false);
-    }, 1200 + Math.random() * 800);
+    }
   };
 
   return (
@@ -82,13 +128,13 @@ export function AIAssistant() {
         animate={{ scale: 1 }}
         transition={{ delay: 2, type: 'spring' }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-[65] w-14 h-14 rounded-full bg-card border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-shadow animate-pulse-gold"
+        className="fixed bottom-6 right-6 z-[65] w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/70 border border-primary/50 flex items-center justify-center shadow-[0_0_25px_rgba(235,193,126,0.5)] hover:shadow-[0_0_35px_rgba(235,193,126,0.7)] hover:scale-110 transition-all duration-300 animate-pulse-gold"
         title="Ask Amara"
       >
         {isOpen ? (
-          <X className="w-5 h-5 text-primary" />
+          <X className="w-5 h-5 text-primary-foreground" />
         ) : (
-          <span className="font-display text-xl text-primary">A</span>
+          <span className="font-display text-2xl font-bold text-primary-foreground drop-shadow-sm">A</span>
         )}
       </motion.button>
 
@@ -100,12 +146,21 @@ export function AIAssistant() {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 25 }}
-            className="fixed bottom-24 right-6 z-[65] w-80 sm:w-96 h-[480px] glass-panel flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 z-[65] w-80 sm:w-96 h-[480px] glass-panel flex flex-col overflow-hidden shadow-2xl border border-primary/20"
           >
             {/* Header */}
-            <div className="p-4 border-b border-border/30">
-              <p className="font-mono text-xs tracking-[0.2em] text-primary">AMARA</p>
-              <p className="font-body text-xs text-muted-foreground">Amorist Fragrance Concierge</p>
+            <div className="p-4 border-b border-border/30 flex justify-between items-center bg-background/50 backdrop-blur-md">
+              <div>
+                <p className="font-mono text-xs tracking-[0.2em] text-primary">AMARA</p>
+                <p className="font-body text-xs text-muted-foreground">Amorist Fragrance Concierge</p>
+              </div>
+              <button 
+                onClick={clearChat}
+                className="p-2 rounded-full hover:bg-secondary/50 text-muted-foreground transition-colors group"
+                title="New Chat / Clear Memory"
+              >
+                <Trash2 className="w-4 h-4 group-hover:text-destructive transition-colors" />
+              </button>
             </div>
 
             {/* Messages */}
@@ -120,46 +175,18 @@ export function AIAssistant() {
                   <div
                     className={`max-w-[85%] px-4 py-3 rounded-2xl ${
                       msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-sm'
-                        : 'bg-secondary/50 text-foreground rounded-bl-sm'
+                        ? 'bg-primary text-primary-foreground rounded-br-sm shadow-md'
+                        : 'bg-secondary/50 text-foreground rounded-bl-sm border border-border/50'
                     }`}
                   >
-                    <p className="font-body text-sm leading-relaxed">{msg.content}</p>
-
-                    {/* Perfume Recommendation Card */}
-                    {msg.perfumeRecommendation && (() => {
-                      const perfume = getPerfumeById(msg.perfumeRecommendation);
-                      if (!perfume) return null;
-                      return (
-                        <div className="mt-3 p-3 bg-background/50 rounded-lg flex items-center gap-3">
-                          <img
-                            src={BOTTLE_IMAGES[perfume.id]}
-                            alt={perfume.name}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-display text-sm text-foreground truncate">{perfume.name}</p>
-                            <p className="font-body text-xs text-primary">₹{perfume.sizes[0]?.price}</p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              const size = perfume.sizes[0];
-                              addItem({ perfumeId: perfume.id, name: perfume.name, size: size.ml, price: size.price, sku: size.sku });
-                            }}
-                            className="p-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/80 transition-colors flex-shrink-0"
-                          >
-                            <ShoppingBag className="w-3 h-3" />
-                          </button>
-                        </div>
-                      );
-                    })()}
+                    <p className="font-body text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, '<br/>') }} />
                   </div>
                 </motion.div>
               ))}
 
               {/* Typing indicator */}
               {isTyping && (
-                <div className="flex gap-1 px-4 py-3 bg-secondary/50 rounded-2xl rounded-bl-sm w-fit">
+                <div className="flex gap-1 px-4 py-3 bg-secondary/50 rounded-2xl rounded-bl-sm w-fit border border-border/50">
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
@@ -173,7 +200,7 @@ export function AIAssistant() {
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t border-border/30">
+            <div className="p-3 border-t border-border/30 bg-background/50 backdrop-blur-md">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -181,7 +208,7 @@ export function AIAssistant() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask Amara anything..."
-                  className="flex-1 h-10 px-4 rounded-lg bg-secondary/30 border border-border/30 text-foreground font-body text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+                  className="flex-1 h-10 px-4 rounded-lg bg-secondary/30 border border-border/30 text-foreground font-body text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 focus:bg-background transition-colors"
                 />
                 <button
                   onClick={handleSend}

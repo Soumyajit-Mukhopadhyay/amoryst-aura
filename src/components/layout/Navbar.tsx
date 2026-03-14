@@ -26,34 +26,36 @@ export function Navbar({ onOpenQuiz }: NavbarProps) {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled ? 'glass-panel py-3' : 'py-5'
+        className={`fixed left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled ? 'top-0 md:top-[40px] glass-panel py-3' : 'top-0 md:top-[40px] py-5'
         }`}
       >
         <div className="container mx-auto px-6 flex items-center justify-between">
-          {/* Logo */}
-          <a href="#" className="flex items-center gap-2">
-            <img src={logoImage} alt="Amorist" className="h-8 w-auto" />
-          </a>
+          <div className="flex items-center gap-12">
+            {/* Logo */}
+            <a href="#" className="flex items-center gap-2">
+              <img src={logoImage} alt="Amorist" className="h-12 w-auto drop-shadow-[0_0_8px_rgba(235,193,126,0.4)]" />
+            </a>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#collections" className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase transition-colors">
-              Collection
-            </a>
-            <a href="#philosophy" className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase transition-colors">
-              Philosophy
-            </a>
-            <a href="#ingredients" className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase transition-colors">
-              Ingredients
-            </a>
-            <button
-              onClick={onOpenQuiz}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 text-primary font-body text-sm tracking-wider hover:bg-primary/10 transition-all animate-pulse-gold"
-            >
-              <Sparkles className="w-4 h-4" />
-              New to fragrance?
-            </button>
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#collections" className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase transition-colors">
+                Collection
+              </a>
+              <a href="#philosophy" className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase transition-colors">
+                Philosophy
+              </a>
+              <a href="#ingredients" className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase transition-colors">
+                Ingredients
+              </a>
+              <button
+                onClick={onOpenQuiz}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-body font-semibold shadow-[0_0_20px_rgba(235,193,126,0.5)] hover:shadow-[0_0_30px_rgba(235,193,126,0.8)] hover:scale-105 hover:-translate-y-0.5 transition-all duration-300 animate-pulse-gold group"
+              >
+                <Sparkles className="w-4 h-4 text-primary-foreground group-hover:rotate-12 transition-transform duration-300" />
+                New to fragrance?
+              </button>
+            </div>
           </div>
 
           {/* Right */}
@@ -151,8 +153,8 @@ export function Navbar({ onOpenQuiz }: NavbarProps) {
               <a href="#collections" onClick={() => setMenuOpen(false)} className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase">Collection</a>
               <a href="#philosophy" onClick={() => setMenuOpen(false)} className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase">Philosophy</a>
               <a href="#ingredients" onClick={() => setMenuOpen(false)} className="text-foreground/70 hover:text-primary font-body text-sm tracking-widest uppercase">Ingredients</a>
-              <button onClick={() => { onOpenQuiz(); setMenuOpen(false); }} className="flex items-center gap-2 text-primary font-body text-sm tracking-wider">
-                <Sparkles className="w-4 h-4" /> New to fragrance?
+              <button onClick={() => { onOpenQuiz(); setMenuOpen(false); }} className="flex w-full items-center justify-center gap-2 px-4 py-3 mt-4 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-body font-semibold shadow-[0_0_15px_rgba(235,193,126,0.4)]">
+                <Sparkles className="w-5 h-5 text-primary-foreground" /> New to fragrance?
               </button>
             </div>
           </motion.div>

@@ -4,20 +4,26 @@ import { QUIZ, scoreQuizAnswers, type QuizOption } from '@/data/quiz';
 import { getPerfumeById } from '@/data/perfumes';
 import { BOTTLE_IMAGES, BOTTLE_VIDEOS } from '@/data/bottleImages';
 import { useCartStore } from '@/store/useCartStore';
-import { X, ArrowRight, Share2, ShoppingBag, Sparkles, Flame, Trophy, Zap } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Share2, ShoppingBag, Sparkles, Flame, Trophy, Zap } from 'lucide-react';
 
 import quizMorning from '@/assets/quiz-morning.jpg';
-import quizEvening from '@/assets/quiz-evening.jpg';
+import quizEvening from '@/assets/quiz-evening.png';
 import quizWeekend from '@/assets/quiz-weekend.jpg';
 import quizOccasion from '@/assets/quiz-occasion.jpg';
 import quizWood from '@/assets/quiz-wood.jpg';
 import quizFlower from '@/assets/quiz-flower.jpg';
 import quizSpice from '@/assets/quiz-spice.jpg';
 import quizSmoke from '@/assets/quiz-smoke.jpg';
+import quizRegionEast from '@/assets/quiz-region-east.png';
+import quizRegionSouth from '@/assets/quiz-region-south.png';
+import quizRegionWest from '@/assets/quiz-region-west.png';
+import quizRegionNorth from '@/assets/quiz-region-north.png';
+import freshImage from '@/assets/bottle-oasis.jpg';
 
 const QUIZ_IMAGES: Record<string, string> = {
   morning: quizMorning, evening: quizEvening, weekend: quizWeekend, occasion: quizOccasion,
-  wood: quizWood, flower: quizFlower, spice: quizSpice, dark: quizSmoke,
+  wood: quizWood, flower: quizFlower, spice: quizSpice, dark: quizSmoke, fresh: freshImage,
+  east: quizRegionEast, south: quizRegionSouth, west: quizRegionWest, north: quizRegionNorth,
 };
 
 interface ScentFinderProps {
@@ -64,8 +70,10 @@ function StreakIndicator({ streak }: { streak: number }) {
 export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
   const [stage, setStage] = useState<'intro' | 'quiz' | 'analyzing' | 'result'>('intro');
   const [currentQ, setCurrentQ] = useState(0);
+  const [userName, setUserName] = useState('');
   const [answers, setAnswers] = useState<QuizOption[]>([]);
   const [results, setResults] = useState<string[]>([]);
+  const [confidenceScores, setConfidenceScores] = useState<number[]>([95, 82]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
   const [xp, setXp] = useState(0);
@@ -73,6 +81,55 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
   const addItem = useCartStore((s) => s.addItem);
 
   const handleStart = () => setStage('quiz');
+
+  const submitQuizToAI = async (finalAnswers: QuizOption[]) => {
+    setStage('analyzing');
+    
+    const preferences = finalAnswers.map(a => a.label).join(', ');
+    const prompt = `I am taking a scent finder quiz. My name is ${userName || 'a guest'}. My preferences are: ${preferences}. Based on your knowledge of Amoryst Aura perfumes, which ONE perfume from our collection is the absolute best match for me? You must also provide a confidence score between 85 and 99. Return your answer in this exact JSON format: {"perfume_id": "the_id", "confidence": 95}. Valid IDs are: twilight, horizon, eclipse, oasis, mirage, elysium, reserve-saffron. Do not output anything other than the JSON.`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s maximum wait for AI
+
+      const res = await fetch('http://localhost:8000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: 'quiz_' + Date.now(), message: prompt }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (res.ok) {
+        const data = await res.json();
+        let jsonStr = data.response.replace(/```json/g, '').replace(/```/g, '').trim();
+        const startIdx = jsonStr.indexOf('{');
+        const endIdx = jsonStr.lastIndexOf('}');
+        if (startIdx >= 0 && endIdx >= startIdx) {
+           jsonStr = jsonStr.substring(startIdx, endIdx + 1);
+           const result = JSON.parse(jsonStr);
+           if (result.perfume_id) {
+              const fallbackId = scoreQuizAnswers(finalAnswers).find(id => id !== result.perfume_id) || 'elysium';
+              setResults([result.perfume_id, fallbackId]);
+              const conf1 = result.confidence || (Math.floor(Math.random() * 10) + 90);
+              const conf2 = conf1 - (Math.floor(Math.random() * 8) + 5);
+              setConfidenceScores([conf1, conf2]);
+              setStage('result');
+              return;
+           }
+        }
+      }
+    } catch(err) {
+      console.warn("AI Request Failed or Timed out", err);
+    }
+    
+    // Fallback logic
+    setResults(scoreQuizAnswers(finalAnswers));
+    const conf1 = Math.floor(Math.random() * 10) + 88;
+    const conf2 = conf1 - (Math.floor(Math.random() * 10) + 5);
+    setConfidenceScores([conf1, conf2]);
+    setStage('result');
+  };
 
   const handleSelect = (option: QuizOption) => {
     setSelectedOption(option.id);
@@ -89,13 +146,23 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
       if (currentQ < QUIZ.questions.length - 1) {
         setCurrentQ(currentQ + 1);
       } else {
-        setStage('analyzing');
-        setTimeout(() => {
-          setResults(scoreQuizAnswers(newAnswers));
-          setStage('result');
-        }, 2500);
+        submitQuizToAI(newAnswers);
       }
-    }, 600);
+    }, 400); // reduced from 600ms for snappier feel
+  };
+
+  const handleBack = () => {
+    if (currentQ === 0) {
+      setStage('intro');
+      setAnswers([]);
+      setStreak(0);
+      setXp(0);
+      setUserName('');
+    } else {
+      setCurrentQ(currentQ - 1);
+      setAnswers(answers.slice(0, -1));
+      if (streak > 0) setStreak(streak - 1);
+    }
   };
 
   const handleReset = () => {
@@ -105,6 +172,7 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
     setResults([]);
     setStreak(0);
     setXp(0);
+    setUserName('');
   };
 
   const question = QUIZ.questions[currentQ];
@@ -208,8 +276,14 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                 transition={{ duration: 0.4 }}
                 className="py-8 px-8"
               >
+                <div className="mb-6">
+                  <button onClick={handleBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <ArrowLeft className="w-4 h-4" /> Back
+                  </button>
+                </div>
+
                 {/* Progress ring */}
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center mb-6 mt-4">
                   <div className="relative">
                     <svg width="70" height="70" viewBox="0 0 70 70">
                       <circle cx="35" cy="35" r="30" fill="none" stroke="hsl(var(--border))" strokeWidth="3" />
@@ -242,49 +316,90 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                   <p className="font-body text-sm text-muted-foreground text-center mb-8">{question.subtext}</p>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {question.options.map((opt, i) => {
-                    const img = QUIZ_IMAGES[opt.id];
-                    const isSelected = selectedOption === opt.id;
-                    return (
-                      <motion.button
-                        key={opt.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08 }}
-                        whileHover={{ scale: 1.03, y: -4 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => !selectedOption && handleSelect(opt)}
-                        className={`group glass-panel overflow-hidden text-left transition-all relative ${
-                          isSelected ? 'border-primary/60 ring-2 ring-primary/30' : 'hover:border-primary/40'
-                        }`}
-                      >
-                        {img && (
-                          <div className="relative h-32 overflow-hidden">
-                            <img src={img} alt={opt.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-                          </div>
-                        )}
-                        <div className="p-4">
-                          {!img && opt.emoji && <span className="text-2xl mb-2 block">{opt.emoji}</span>}
-                          <p className="font-body font-medium text-foreground mb-1">{opt.label}</p>
-                          {opt.sensoryHint && (
-                            <p className="font-body text-xs text-muted-foreground italic">{opt.sensoryHint}</p>
+                {question.type === 'text-input' ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center max-w-sm mx-auto mt-8">
+                    <input 
+                      type="text" 
+                      value={userName} 
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="Your name"
+                      className="w-full bg-background border border-border rounded-lg px-4 py-3 text-foreground font-body focus:outline-none focus:ring-2 focus:ring-primary/50 text-center text-lg mb-6 shadow-inner"
+                      autoFocus
+                    />
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                         if(userName.trim()) {
+                            setCurrentQ(currentQ + 1);
+                         }
+                      }}
+                      className="inline-flex items-center gap-2 h-12 px-8 bg-primary text-primary-foreground font-body font-medium tracking-wider rounded-lg hover:bg-primary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!userName.trim()}
+                    >
+                      Continue
+                      <ArrowRight className="w-4 h-4" />
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                    {question.options.map((opt, i) => {
+                      const img = QUIZ_IMAGES[opt.id];
+                      const isSelected = selectedOption === opt.id;
+                      return (
+                        <motion.button
+                          key={opt.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.08 }}
+                          whileHover={{ scale: 1.03, y: -4 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => !selectedOption && handleSelect(opt)}
+                          className={`group glass-panel overflow-hidden text-left transition-all relative ${
+                            isSelected ? 'border-primary/60 ring-2 ring-primary/30' : 'hover:border-primary/40'
+                          }`}
+                        >
+                          {img && (
+                            <div className="relative h-32 overflow-hidden">
+                              <img src={img} alt={opt.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+                            </div>
                           )}
-                        </div>
-                        {/* Selection flash */}
-                        {isSelected && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: [0, 0.3, 0] }}
-                            transition={{ duration: 0.6 }}
-                            className="absolute inset-0 bg-primary pointer-events-none"
-                          />
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
+                          {/* Gamified Animated Emoji wrapper for options without images */}
+                          <div className={`p-4 ${!img ? 'flex flex-col items-center justify-center text-center h-full min-h-[140px]' : ''}`}>
+                            {!img && opt.emoji && (
+                              <motion.div 
+                                animate={{ y: [0, -6, 0] }} 
+                                transition={{ duration: 3 + Math.random(), repeat: Infinity, ease: 'easeInOut' }}
+                                className="relative w-14 h-14 mb-4 flex items-center justify-center rounded-full bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(255,215,0,0.1)]"
+                              >
+                                <span className="text-3xl relative z-10">{opt.emoji}</span>
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 8 + Math.random() * 4, repeat: Infinity, ease: 'linear' }}
+                                  className="absolute inset-x-0 w-full h-full border border-dashed border-primary/40 rounded-full"
+                                />
+                              </motion.div>
+                            )}
+                            <p className="font-body font-medium text-foreground mb-1">{opt.label}</p>
+                            {opt.sensoryHint && (
+                              <p className="font-body text-xs text-muted-foreground italic">{opt.sensoryHint}</p>
+                            )}
+                          </div>
+                          {/* Selection flash */}
+                          {isSelected && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: [0, 0.3, 0] }}
+                              transition={{ duration: 0.6 }}
+                              className="absolute inset-0 bg-primary pointer-events-none"
+                            />
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -376,12 +491,12 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                           <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
-                              animate={{ width: idx === 0 ? '95%' : '82%' }}
+                              animate={{ width: `${confidenceScores[idx]}%` }}
                               transition={{ delay: 0.8 + idx * 0.2, duration: 1 }}
                               className="h-full bg-primary rounded-full"
                             />
                           </div>
-                          <span className="font-mono text-xs text-primary">{idx === 0 ? '95' : '82'}%</span>
+                          <span className="font-mono text-xs text-primary">{confidenceScores[idx]}%</span>
                         </div>
                         <motion.button
                           whileHover={{ scale: 1.02 }}

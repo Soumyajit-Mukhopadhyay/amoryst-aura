@@ -3,7 +3,7 @@ import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'fra
 import { getMainPerfumes, type Perfume } from '@/data/perfumes';
 import { BOTTLE_IMAGES, BOTTLE_VIDEOS } from '@/data/bottleImages';
 import { useCartStore } from '@/store/useCartStore';
-import { ShoppingBag, Clock, Wind, Layers, X, ChevronRight, Droplets, Star, Heart } from 'lucide-react';
+import { ShoppingBag, Clock, Wind, Layers, X, ChevronRight, Droplets, Star, Heart, Search } from 'lucide-react';
 
 // Ingredient images for bisect
 import ingredientJasmine from '@/assets/ingredient-jasmine.jpg';
@@ -340,6 +340,7 @@ export function CollectionsSection() {
   const addItem = useCartStore((s) => s.addItem);
   const [bisectedPerfume, setBisectedPerfume] = useState<Perfume | null>(null);
   const [sprayingId, setSprayingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
   const parallaxY = useTransform(scrollYProgress, [0, 1], [80, -80]);
@@ -349,8 +350,17 @@ export function CollectionsSection() {
     setTimeout(() => setSprayingId(null), 2500);
   };
 
+  const filteredPerfumes = perfumes.filter(perfume => {
+    const q = searchQuery.toLowerCase();
+    return perfume.name.toLowerCase().includes(q) || 
+           perfume.tagline.toLowerCase().includes(q) ||
+           perfume.scentFamily.toLowerCase().includes(q) ||
+           perfume.personality?.toLowerCase().includes(q) ||
+           perfume.character.some(c => c.toLowerCase().includes(q));
+  });
+
   return (
-    <section id="collections" ref={ref} className="py-24 relative overflow-hidden">
+    <section id="collections" ref={ref} className="pt-16 pb-8 md:pt-20 md:pb-10 relative overflow-hidden">
       <motion.div
         style={{ y: parallaxY }}
         className="absolute -top-20 right-0 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[150px] pointer-events-none"
@@ -362,19 +372,37 @@ export function CollectionsSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-10"
         >
           <p className="font-mono text-xs tracking-[0.3em] text-primary mb-4 uppercase">The Collection</p>
           <h2 className="font-display text-4xl md:text-6xl font-light text-foreground mb-4">Eight Signatures</h2>
-          <p className="font-body text-muted-foreground max-w-md mx-auto">
+          <p className="font-body text-muted-foreground max-w-md mx-auto mb-8">
             Each crafted for a version of you. Choose the one that speaks.
           </p>
+
+          <div className="relative max-w-md mx-auto">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by name, scent family, or feeling..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-background/50 border border-primary/20 text-foreground placeholder-muted-foreground text-sm rounded-full pl-12 pr-4 py-3 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all font-body"
+            />
+          </div>
         </motion.div>
 
         {/* Scrollable Video Cards with Tilt */}
-        <div className="overflow-x-auto pb-8 -mx-6 px-6 scrollbar-hide">
-          <div className="flex gap-6 min-w-max">
-            {perfumes.map((perfume, i) => {
+        <div className="overflow-x-auto pb-8 -mx-6 px-6 scrollbar-hide min-h-[500px]">
+          {filteredPerfumes.length === 0 ? (
+            <div className="w-full text-center py-20 text-muted-foreground font-body">
+              No signatures match your search. Try another feeling or scent family.
+            </div>
+          ) : (
+            <div className="flex gap-6 min-w-max">
+              {filteredPerfumes.map((perfume, i) => {
               const videoSrc = BOTTLE_VIDEOS[perfume.id];
               const isSpraying = sprayingId === perfume.id;
               return (
@@ -500,7 +528,8 @@ export function CollectionsSection() {
                 </motion.div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
