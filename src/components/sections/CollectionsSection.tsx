@@ -39,6 +39,47 @@ function getIngredientImage(name: string): string {
   return INGREDIENT_IMAGES[name] || ingredientSandalwood;
 }
 
+/* ── Lazy video: only loads/plays when visible ── */
+function LazyVideo({ src, poster, className }: { src: string; poster?: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (videoRef.current) {
+          if (entry.isIntersecting) {
+            videoRef.current.play().catch(() => {});
+          } else {
+            videoRef.current.pause();
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className={className}>
+      <video
+        ref={videoRef}
+        muted
+        loop
+        playsInline
+        preload="none"
+        poster={poster}
+        className="w-full h-full object-cover"
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+    </div>
+  );
+}
+
 /* ── Spray particle animation - reduced to 12 particles ── */
 function SprayAnimation({ active, color }: { active: boolean; color: string }) {
   if (!active) return null;
