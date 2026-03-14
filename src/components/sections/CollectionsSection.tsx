@@ -414,11 +414,9 @@ function ProductCard({ perfume, inView, index, onSpray, onBisect }: {
           onClick={() => onSpray(perfume.id)}
         >
           {videoSrc ? (
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" poster={BOTTLE_IMAGES[perfume.id]}>
-              <source src={videoSrc} type="video/mp4" />
-            </video>
+            <LazyVideo src={videoSrc} poster={BOTTLE_IMAGES[perfume.id]} className="w-full h-full group-hover:scale-105 transition-transform duration-700" />
           ) : (
-            <motion.img src={BOTTLE_IMAGES[perfume.id]} alt={perfume.name} className="w-full h-full object-cover" whileHover={{ scale: 1.08, rotate: 2 }} transition={{ duration: 0.6 }} />
+            <img src={BOTTLE_IMAGES[perfume.id]} alt={perfume.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
           <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-background/60 backdrop-blur-sm rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
