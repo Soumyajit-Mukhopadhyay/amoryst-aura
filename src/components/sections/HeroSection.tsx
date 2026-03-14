@@ -49,18 +49,10 @@ export function HeroSection({ onOpenQuiz }: HeroSectionProps) {
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
           
-          {/* Interactive Glowing Orbs */}
+          {/* Single subtle glow orb - GPU optimized */}
           <motion.div 
             style={{ x: orbX, y: orbY }}
-            className="absolute top-1/4 right-1/4 w-[50vw] h-[50vw] max-w-[600px] max-h-[600px] bg-primary/30 rounded-full blur-[120px] pointer-events-none"
-          />
-          <motion.div 
-            style={{ x: useTransform(orbX, v => -v), y: useTransform(orbY, v => -v) }}
-            className="absolute bottom-1/4 left-1/4 w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] bg-primary/20 rounded-full blur-[100px] pointer-events-none"
-          />
-          <motion.div 
-            style={{ x: orbX, y: useTransform(orbY, v => -v) }}
-            className="absolute top-1/2 right-1/2 translate-x-1/2 -translate-y-1/2 w-[35vw] h-[35vw] max-w-[400px] max-h-[400px] bg-primary/20 rounded-full blur-[80px] pointer-events-none"
+            className="absolute top-1/4 right-1/4 w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] bg-primary/20 rounded-full blur-[100px] pointer-events-none will-change-transform"
           />
         </div>
       </motion.div>
