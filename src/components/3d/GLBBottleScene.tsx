@@ -282,12 +282,23 @@ function SceneContent({ perfume, modelUrl, onSpray }: { perfume: any; modelUrl: 
         intensity={3.0}
         color="#FFF5E0"
         castShadow
-        shadow-mapSize={[512, 512]}
+        shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.001}
       />
       <directionalLight position={[-3, 4, -2]} intensity={1.2} color="#C8D8FF" />
       <pointLight position={[0, 3, -4]} intensity={4.0} color={bottle.lightingTint} distance={10} />
-      <ambientLight intensity={0.25} color="#1A1A2E" />
+      <pointLight position={[2, -1, 3]} intensity={1.5} color={bottle.labelAccentColor} distance={8} />
+      <ambientLight intensity={0.15} color="#1A1A2E" />
+
+      {/* Spot light from above for dramatic effect */}
+      <spotLight
+        position={[0, 8, 0]}
+        angle={0.4}
+        penumbra={0.8}
+        intensity={2.0}
+        color="#FFF8F0"
+        castShadow
+      />
 
       {/* The 3D Bottle */}
       <PremiumBottleModel modelUrl={modelUrl} perfume={perfume} onClick={handleClick} />
@@ -295,8 +306,8 @@ function SceneContent({ perfume, modelUrl, onSpray }: { perfume: any; modelUrl: 
       {/* Spray burst */}
       <SprayBurst3D active={spraying} color={bottle.particleColor} />
 
-      {/* Ambient particle mist — reduced for perf */}
-      <ParticleField color={bottle.particleColor} count={80} radius={3} />
+      {/* Ambient particle mist */}
+      <ParticleField color={bottle.particleColor} count={250} radius={3} />
 
       {/* Glowing pedestal */}
       <GlowingPedestal color={bottle.lightingTint} />

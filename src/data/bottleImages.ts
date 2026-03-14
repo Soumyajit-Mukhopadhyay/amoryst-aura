@@ -1,4 +1,11 @@
-// Static images still imported via Vite for optimization
+import videoTwilight from '@/assets/video-twilight.mp4';
+import videoHorizon from '@/assets/video-horizon.mp4';
+import videoEclipse from '@/assets/video-eclipse.mp4';
+import videoElysium from '@/assets/video-elysium.mp4';
+import videoMirage from '@/assets/video-mirage.mp4';
+import videoOasis from '@/assets/video-oasis.mp4';
+import videoReserve from '@/assets/video-reserve.mp4';
+
 import bottleTwilight from '@/assets/bottle-twilight.jpg';
 import bottleHorizon from '@/assets/bottle-horizon.jpg';
 import bottleEclipse from '@/assets/bottle-eclipse.jpg';
@@ -18,14 +25,13 @@ export const BOTTLE_IMAGES: Record<string, string> = {
   'sampler-kit': bottleTwilight,
 };
 
-// Videos served from /public/videos/ as static assets (not bundled by Vite)
 export const BOTTLE_VIDEOS: Record<string, string> = {
-  'twilight': '/videos/video-twilight.mp4',
-  'horizon': '/videos/video-horizon.mp4',
-  'eclipse': '/videos/video-eclipse.mp4',
-  'elysium': '/videos/video-elysium.mp4',
-  'mirage': '/videos/video-mirage.mp4',
-  'oasis': '/videos/video-oasis.mp4',
-  'reserve-saffron': '/videos/video-reserve.mp4',
-  'sampler-kit': '/videos/video-twilight.mp4',
+  'twilight': videoTwilight,
+  'horizon': videoHorizon,
+  'eclipse': videoEclipse,
+  'elysium': videoElysium,
+  'mirage': videoMirage,
+  'oasis': videoOasis,
+  'reserve-saffron': videoReserve,
+  'sampler-kit': videoTwilight,
 };

@@ -17,7 +17,7 @@ function SceneContent({ perfume, scale = 1, interactive = false, showParticles =
       <PerfumeBottle3D perfume={perfume} scale={scale} autoRotate={!interactive} />
 
       {showParticles && (
-        <ParticleField color={perfume.bottle.particleColor} count={80} radius={2.5} />
+        <ParticleField color={perfume.bottle.particleColor} count={300} radius={2.5} />
       )}
 
       <ContactShadows opacity={0.4} scale={3} blur={2} far={4} color="#000000" position={[0, -0.5, 0]} />
