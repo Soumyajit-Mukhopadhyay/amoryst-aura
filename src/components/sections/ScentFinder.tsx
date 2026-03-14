@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QUIZ, scoreQuizAnswers, type QuizOption } from '@/data/quiz';
+import { QUIZ, scoreQuizToArchetype, type QuizOption, type FragranceArchetype } from '@/data/quiz';
 import { getPerfumeById } from '@/data/perfumes';
 import { BOTTLE_IMAGES, BOTTLE_VIDEOS } from '@/data/bottleImages';
 import { useCartStore } from '@/store/useCartStore';
-import { X, ArrowRight, ArrowLeft, Share2, ShoppingBag, Sparkles, Flame, Trophy, Zap } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Share2, ShoppingBag, Sparkles, Flame, Trophy, Zap, Droplets, Clock, Star } from 'lucide-react';
 
 import quizMorning from '@/assets/quiz-morning.jpg';
 import quizEvening from '@/assets/quiz-evening.png';
@@ -67,12 +67,40 @@ function StreakIndicator({ streak }: { streak: number }) {
   );
 }
 
+/* Note Pyramid Row */
+function NotePyramidRow({ label, notes, delay }: { label: string; notes: string[]; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -30 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay, duration: 0.6 }}
+      className="flex items-start gap-3"
+    >
+      <span className="font-mono text-[10px] tracking-[0.2em] text-primary uppercase w-14 shrink-0 pt-1">{label}</span>
+      <div className="flex flex-wrap gap-1.5">
+        {notes.map((note, i) => (
+          <motion.span
+            key={note}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: delay + 0.1 * i }}
+            className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-body text-foreground"
+          >
+            {note}
+          </motion.span>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
-  const [stage, setStage] = useState<'intro' | 'quiz' | 'analyzing' | 'result'>('intro');
+  const [stage, setStage] = useState<'intro' | 'quiz' | 'greeting' | 'analyzing' | 'result'>('intro');
   const [currentQ, setCurrentQ] = useState(0);
   const [userName, setUserName] = useState('');
   const [answers, setAnswers] = useState<QuizOption[]>([]);
-  const [results, setResults] = useState<string[]>([]);
+  const [archetypeResult, setArchetypeResult] = useState<{ primary: FragranceArchetype; secondary: FragranceArchetype } | null>(null);
+  const [aiText, setAiText] = useState<string>('');
   const [confidenceScores, setConfidenceScores] = useState<number[]>([95, 82]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
@@ -82,53 +110,58 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
 
   const handleStart = () => setStage('quiz');
 
+  // After name entry, show greeting then auto-advance
+  const handleNameSubmit = () => {
+    if (!userName.trim()) return;
+    setStage('greeting');
+    setTimeout(() => {
+      setStage('quiz');
+      setCurrentQ(currentQ + 1);
+    }, 2000);
+  };
+
   const submitQuizToAI = async (finalAnswers: QuizOption[]) => {
     setStage('analyzing');
-    
-    const preferences = finalAnswers.map(a => a.label).join(', ');
-    const prompt = `I am taking a scent finder quiz. My name is ${userName || 'a guest'}. My preferences are: ${preferences}. Based on your knowledge of Amoryst Aura perfumes, which ONE perfume from our collection is the absolute best match for me? You must also provide a confidence score between 85 and 99. Return your answer in this exact JSON format: {"perfume_id": "the_id", "confidence": 95}. Valid IDs are: twilight, horizon, eclipse, oasis, mirage, elysium, reserve-saffron. Do not output anything other than the JSON.`;
 
+    // 1) Always compute local archetype result
+    const result = scoreQuizToArchetype(finalAnswers);
+    setArchetypeResult(result);
+
+    const conf1 = Math.floor(Math.random() * 6) + 93;
+    const conf2 = conf1 - (Math.floor(Math.random() * 8) + 5);
+    setConfidenceScores([conf1, conf2]);
+
+    // 2) Try AI for a personalized persuasion text (2s timeout)
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s maximum wait for AI
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      const preferences = finalAnswers.map(a => a.label).join(', ');
+      const prompt = `You are a luxury fragrance concierge. The user "${userName || 'guest'}" just completed a fragrance quiz. Their archetype is "${result.primary.name}" (${result.primary.family}). Their preferences: ${preferences}. Write a 2-sentence deeply personalized, aspirational, and convincing text that makes them feel this archetype was MADE for them. Use poetic, luxury language. Do not use the word "quiz". Output ONLY the 2 sentences, nothing else.`;
 
       const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: 'quiz_' + Date.now(), message: prompt }),
+        body: JSON.stringify({ session_id: 'quiz_archetype_' + Date.now(), message: prompt }),
         signal: controller.signal
       });
       clearTimeout(timeoutId);
-      
+
       if (res.ok) {
         const data = await res.json();
-        let jsonStr = data.response.replace(/```json/g, '').replace(/```/g, '').trim();
-        const startIdx = jsonStr.indexOf('{');
-        const endIdx = jsonStr.lastIndexOf('}');
-        if (startIdx >= 0 && endIdx >= startIdx) {
-           jsonStr = jsonStr.substring(startIdx, endIdx + 1);
-           const result = JSON.parse(jsonStr);
-           if (result.perfume_id) {
-              const fallbackId = scoreQuizAnswers(finalAnswers).find(id => id !== result.perfume_id) || 'elysium';
-              setResults([result.perfume_id, fallbackId]);
-              const conf1 = result.confidence || (Math.floor(Math.random() * 10) + 90);
-              const conf2 = conf1 - (Math.floor(Math.random() * 8) + 5);
-              setConfidenceScores([conf1, conf2]);
-              setStage('result');
-              return;
-           }
+        const text = data.response?.trim();
+        if (text && text.length > 20 && text.length < 500) {
+          setAiText(text);
         }
       }
-    } catch(err) {
-      console.warn("AI Request Failed or Timed out", err);
+    } catch (err) {
+      console.warn("AI archetype analysis timed out or failed, using fallback", err);
     }
-    
-    // Fallback logic
-    setResults(scoreQuizAnswers(finalAnswers));
-    const conf1 = Math.floor(Math.random() * 10) + 88;
-    const conf2 = conf1 - (Math.floor(Math.random() * 10) + 5);
-    setConfidenceScores([conf1, conf2]);
-    setStage('result');
+
+    // Small delay for analyzing animation to feel premium
+    setTimeout(() => {
+      setStage('result');
+    }, 2200);
   };
 
   const handleSelect = (option: QuizOption) => {
@@ -148,7 +181,7 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
       } else {
         submitQuizToAI(newAnswers);
       }
-    }, 400); // reduced from 600ms for snappier feel
+    }, 400);
   };
 
   const handleBack = () => {
@@ -169,7 +202,8 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
     setStage('intro');
     setCurrentQ(0);
     setAnswers([]);
-    setResults([]);
+    setArchetypeResult(null);
+    setAiText('');
     setStreak(0);
     setXp(0);
     setUserName('');
@@ -230,7 +264,7 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
               </motion.div>
             )}
 
-            {/* INTRO */}
+            {/* ─── INTRO ─── */}
             {stage === 'intro' && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 px-8">
                 <motion.div
@@ -266,7 +300,51 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
               </motion.div>
             )}
 
-            {/* QUIZ */}
+            {/* ─── GREETING (after name entry) ─── */}
+            {stage === 'greeting' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="py-32 px-8 text-center"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                >
+                  <motion.p
+                    className="font-display text-4xl md:text-5xl font-light text-foreground mb-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                  >
+                    Hi <span className="text-gradient-gold italic font-normal">{userName}</span>
+                  </motion.p>
+                  <motion.p
+                    className="font-body text-lg text-muted-foreground"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.6 }}
+                  >
+                    Let's discover your fragrance identity...
+                  </motion.p>
+                </motion.div>
+
+                {/* Animated golden ring */}
+                <motion.div
+                  className="w-20 h-20 mx-auto mt-10 rounded-full border-2 border-primary/40"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.3, 0.7, 0.3],
+                    borderColor: ['rgba(235,193,126,0.2)', 'rgba(235,193,126,0.6)', 'rgba(235,193,126,0.2)'],
+                  }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              </motion.div>
+            )}
+
+            {/* ─── QUIZ ─── */}
             {stage === 'quiz' && question && (
               <motion.div
                 key={question.id}
@@ -301,7 +379,6 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                         {currentQ + 1}/{QUIZ.questions.length}
                       </text>
                     </svg>
-                    {/* Glow on progress */}
                     <motion.div
                       animate={{ opacity: [0.3, 0.6, 0.3] }}
                       transition={{ duration: 2, repeat: Infinity }}
@@ -322,6 +399,7 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                       type="text" 
                       value={userName} 
                       onChange={(e) => setUserName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
                       placeholder="Your name"
                       className="w-full bg-background border border-border rounded-lg px-4 py-3 text-foreground font-body focus:outline-none focus:ring-2 focus:ring-primary/50 text-center text-lg mb-6 shadow-inner"
                       autoFocus
@@ -329,11 +407,7 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                         if(userName.trim()) {
-                            setCurrentQ(currentQ + 1);
-                         }
-                      }}
+                      onClick={handleNameSubmit}
                       className="inline-flex items-center gap-2 h-12 px-8 bg-primary text-primary-foreground font-body font-medium tracking-wider rounded-lg hover:bg-primary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={!userName.trim()}
                     >
@@ -365,7 +439,6 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
                             </div>
                           )}
-                          {/* Gamified Animated Emoji wrapper for options without images */}
                           <div className={`p-4 ${!img ? 'flex flex-col items-center justify-center text-center h-full min-h-[140px]' : ''}`}>
                             {!img && opt.emoji && (
                               <motion.div 
@@ -386,7 +459,6 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                               <p className="font-body text-xs text-muted-foreground italic">{opt.sensoryHint}</p>
                             )}
                           </div>
-                          {/* Selection flash */}
                           {isSelected && (
                             <motion.div
                               initial={{ opacity: 0 }}
@@ -403,7 +475,7 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
               </motion.div>
             )}
 
-            {/* ANALYZING */}
+            {/* ─── ANALYZING ─── */}
             {stage === 'analyzing' && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -420,7 +492,7 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
                   transition={{ duration: 1.5, repeat: Infinity }}
                   className="font-display text-2xl text-foreground mb-2"
                 >
-                  Analyzing your scent profile...
+                  Decoding your scent identity...
                 </motion.p>
                 <p className="font-body text-sm text-muted-foreground">Matching {xp} XP worth of preferences</p>
 
@@ -441,95 +513,220 @@ export function ScentFinder({ isOpen, onClose }: ScentFinderProps) {
               </motion.div>
             )}
 
-            {/* RESULT */}
-            {stage === 'result' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-12 px-8 text-center">
-                {/* Achievement */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', delay: 0.1 }}
-                  className="mb-6"
-                >
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
-                    <Trophy className="w-4 h-4 text-primary" />
-                    <span className="font-mono text-xs text-primary tracking-wider">{xp} XP Earned • {streak}x Max Streak</span>
+            {/* ─── RESULT (Archetype Reveal) ─── */}
+            {stage === 'result' && archetypeResult && (() => {
+              const arch = archetypeResult.primary;
+              const archSecondary = archetypeResult.secondary;
+              const primaryPerfume = getPerfumeById(arch.primarySku);
+              const secondaryPerfume = getPerfumeById(archSecondary.primarySku);
+              const discoveryText = aiText || arch.discoveryLine;
+
+              return (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-10 px-6 sm:px-8">
+                  {/* Achievement Banner */}
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', delay: 0.1 }}
+                    className="text-center mb-8"
+                  >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-6">
+                      <Trophy className="w-4 h-4 text-primary" />
+                      <span className="font-mono text-xs text-primary tracking-wider">{xp} XP Earned • {streak}x Max Streak</span>
+                    </div>
+
+                    {/* Name greeting */}
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="font-body text-sm text-muted-foreground mb-2"
+                    >
+                      {userName ? `${userName}, you are` : 'You are'}
+                    </motion.p>
+
+                    {/* Archetype Name — big reveal */}
+                    <motion.h2
+                      initial={{ opacity: 0, y: 30, scale: 0.8 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
+                      className="font-display text-5xl md:text-7xl font-light text-foreground mb-3"
+                    >
+                      <span className="text-gradient-gold">{arch.name}</span>
+                    </motion.h2>
+
+                    {/* Tagline */}
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.8 }}
+                      className="font-body text-lg text-muted-foreground italic"
+                    >
+                      "{arch.tagline}"
+                    </motion.p>
+                  </motion.div>
+
+                  {/* Fragrance Family Badge */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1 }}
+                    className="flex justify-center mb-8"
+                  >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border/50">
+                      <Droplets className="w-4 h-4 text-primary" />
+                      <span className="font-mono text-xs tracking-[0.15em] text-foreground uppercase">{arch.family}</span>
+                    </div>
+                  </motion.div>
+
+                  {/* Note Pyramid */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.1 }}
+                    className="glass-panel p-6 mb-8 max-w-lg mx-auto"
+                  >
+                    <p className="font-mono text-[10px] tracking-[0.3em] text-primary uppercase mb-4">Your Scent Pyramid</p>
+                    <div className="space-y-3">
+                      <NotePyramidRow label="Top" notes={arch.topNotes} delay={1.2} />
+                      <NotePyramidRow label="Heart" notes={arch.heartNotes} delay={1.5} />
+                      <NotePyramidRow label="Base" notes={arch.baseNotes} delay={1.8} />
+                    </div>
+                  </motion.div>
+
+                  {/* Info Badges: Intensity / Longevity / Best For */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 2 }}
+                    className="flex flex-wrap justify-center gap-3 mb-8"
+                  >
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50">
+                      <Flame className="w-3.5 h-3.5 text-primary" />
+                      <span className="font-mono text-[10px] text-muted-foreground tracking-wider uppercase">{arch.intensity}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50">
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      <span className="font-mono text-[10px] text-muted-foreground tracking-wider">{arch.longevity}</span>
+                    </div>
+                    {arch.bestFor.slice(0, 3).map(b => (
+                      <div key={b} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50">
+                        <Star className="w-3 h-3 text-primary" />
+                        <span className="font-mono text-[10px] text-muted-foreground tracking-wider capitalize">{b}</span>
+                      </div>
+                    ))}
+                  </motion.div>
+
+                  {/* AI / Discovery Text */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 2.2 }}
+                    className="text-center mb-10 max-w-lg mx-auto"
+                  >
+                    <motion.p
+                      className="font-body text-base text-foreground/80 italic leading-relaxed"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 2.4, duration: 1 }}
+                    >
+                      "{discoveryText}"
+                    </motion.p>
+                  </motion.div>
+
+                  {/* Product Cards */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 2.6 }}
+                    className="mb-8"
+                  >
+                    <p className="font-mono text-[10px] tracking-[0.3em] text-primary mb-4 text-center uppercase">Your Perfect Match</p>
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                      {[
+                        { perfume: primaryPerfume, label: 'Primary Match', conf: confidenceScores[0], sku: arch.primarySku },
+                        { perfume: secondaryPerfume, label: 'Also Try', conf: confidenceScores[1], sku: archSecondary.primarySku },
+                      ].map(({ perfume, label, conf, sku }, idx) => {
+                        if (!perfume) return null;
+                        const videoSrc = BOTTLE_VIDEOS[sku];
+                        return (
+                          <motion.div
+                            key={sku}
+                            initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
+                            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                            transition={{ delay: 2.8 + idx * 0.2, type: 'spring' }}
+                            className="glass-panel p-6 max-w-xs mx-auto group"
+                          >
+                            <p className="font-mono text-[10px] tracking-[0.2em] text-primary uppercase mb-3">{label}</p>
+                            <div className="relative overflow-hidden rounded-lg mb-4 h-48">
+                              {videoSrc ? (
+                                <video autoPlay muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                  <source src={videoSrc} type="video/mp4" />
+                                </video>
+                              ) : (
+                                <img
+                                  src={BOTTLE_IMAGES[sku]}
+                                  alt={perfume.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                              )}
+                            </div>
+                            <h3 className="font-display text-2xl text-foreground mb-1">{perfume.name}</h3>
+                            <p className="font-body text-sm text-muted-foreground italic mb-2">{perfume.tagline}</p>
+                            {/* Match percentage */}
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                              <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${conf}%` }}
+                                  transition={{ delay: 3 + idx * 0.2, duration: 1 }}
+                                  className="h-full bg-primary rounded-full"
+                                />
+                              </div>
+                              <span className="font-mono text-xs text-primary">{conf}%</span>
+                            </div>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => {
+                                const size = perfume.sizes[0];
+                                addItem({ perfumeId: perfume.id, name: perfume.name, size: size.ml, price: size.price, sku: size.sku });
+                              }}
+                              className="w-full flex items-center justify-center gap-2 h-10 bg-primary text-primary-foreground font-body text-sm font-medium rounded-lg hover:bg-primary/80 transition-colors"
+                            >
+                              <ShoppingBag className="w-4 h-4" />
+                              Make it mine — ₹{perfume.sizes[0]?.price}
+                            </motion.button>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+
+                  {/* Share + Referral */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 3.2 }}
+                    className="glass-panel p-6 max-w-md mx-auto text-center"
+                  >
+                    <p className="font-body text-sm text-foreground mb-3">
+                      Share this quiz with a friend. When they order, you both get <span className="text-primary font-semibold">₹150 Amorist Credit</span>.
+                    </p>
+                    <button className="inline-flex items-center gap-2 h-9 px-4 bg-secondary text-secondary-foreground font-body text-sm rounded-lg hover:bg-secondary/80 transition-colors">
+                      <Share2 className="w-4 h-4" />
+                      Share on WhatsApp
+                    </button>
+                  </motion.div>
+
+                  <div className="text-center mt-6">
+                    <button onClick={handleReset} className="text-muted-foreground font-body text-sm hover:text-foreground transition-colors">
+                      Take the quiz again
+                    </button>
                   </div>
-                  <p className="font-mono text-xs tracking-[0.3em] text-primary mb-4 uppercase">Your Perfect Match</p>
                 </motion.div>
-
-                <div className="flex flex-col sm:flex-row gap-6 justify-center mb-10">
-                  {results.map((id, idx) => {
-                    const perfume = getPerfumeById(id);
-                    if (!perfume) return null;
-                    const videoSrc = BOTTLE_VIDEOS[id];
-                    return (
-                      <motion.div
-                        key={id}
-                        initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
-                        animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                        transition={{ delay: 0.3 + idx * 0.2, type: 'spring' }}
-                        className="glass-panel p-6 max-w-xs mx-auto group"
-                      >
-                        <div className="relative overflow-hidden rounded-lg mb-4 h-48">
-                          {videoSrc ? (
-                            <video autoPlay muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                              <source src={videoSrc} type="video/mp4" />
-                            </video>
-                          ) : (
-                            <img
-                              src={BOTTLE_IMAGES[id]}
-                              alt={perfume.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          )}
-                        </div>
-                        <h3 className="font-display text-2xl text-foreground mb-1">{perfume.name}</h3>
-                        <p className="font-body text-sm text-muted-foreground italic mb-2">{perfume.tagline}</p>
-                        {/* Match percentage */}
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${confidenceScores[idx]}%` }}
-                              transition={{ delay: 0.8 + idx * 0.2, duration: 1 }}
-                              className="h-full bg-primary rounded-full"
-                            />
-                          </div>
-                          <span className="font-mono text-xs text-primary">{confidenceScores[idx]}%</span>
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            const size = perfume.sizes[0];
-                            addItem({ perfumeId: perfume.id, name: perfume.name, size: size.ml, price: size.price, sku: size.sku });
-                          }}
-                          className="w-full flex items-center justify-center gap-2 h-10 bg-primary text-primary-foreground font-body text-sm font-medium rounded-lg hover:bg-primary/80 transition-colors"
-                        >
-                          <ShoppingBag className="w-4 h-4" />
-                          Make it mine — ₹{perfume.sizes[0]?.price}
-                        </motion.button>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-
-                <div className="glass-panel p-6 max-w-md mx-auto">
-                  <p className="font-body text-sm text-foreground mb-3">
-                    Share this quiz with a friend. When they order, you both get <span className="text-primary font-semibold">₹150 Amorist Credit</span>.
-                  </p>
-                  <button className="inline-flex items-center gap-2 h-9 px-4 bg-secondary text-secondary-foreground font-body text-sm rounded-lg hover:bg-secondary/80 transition-colors">
-                    <Share2 className="w-4 h-4" />
-                    Share on WhatsApp
-                  </button>
-                </div>
-
-                <button onClick={handleReset} className="mt-6 text-muted-foreground font-body text-sm hover:text-foreground transition-colors">
-                  Take the quiz again
-                </button>
-              </motion.div>
-            )}
+              );
+            })()}
           </motion.div>
         </motion.div>
       )}
