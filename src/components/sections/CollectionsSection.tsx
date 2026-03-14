@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { getMainPerfumes, type Perfume } from '@/data/perfumes';
 import { BOTTLE_IMAGES, BOTTLE_VIDEOS } from '@/data/bottleImages';
