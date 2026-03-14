@@ -73,17 +73,8 @@ export function AIAssistant() {
     });
   };
 
-  const clearChat = async () => {
+  const clearChat = () => {
     setMessages([{ role: 'assistant', content: "Memory cleared. How may I assist you anew?" }]);
-    try {
-      await fetch("http://localhost:8000/clear", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: SESSION_ID })
-      });
-    } catch(e) {
-      console.error("Failed to clear backend memory", e);
-    }
   };
 
   const handleSend = async () => {
